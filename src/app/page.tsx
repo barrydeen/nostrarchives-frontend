@@ -8,7 +8,7 @@ import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 export default async function HomePage() {
   const [dailyStats, trendingNotes, newUsers, trendingUsers] = await Promise.all([
     getDailyStats(),
-    getTrendingNotes(15),
+    getTrendingNotes(10),
     getNewUsers(12),
     getTrendingUsers(12),
   ]);
@@ -28,10 +28,16 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       <NetworkStatsBar stats={dailyStats} />
-      <TrendingNotes notes={trendingNotes?.notes ?? []} profiles={profiles} />
-      <div className="grid gap-10 lg:grid-cols-2">
-        <TrendingUsers users={trendingUsers?.users ?? []} profiles={profiles} />
-        <NewUsers users={newUsers?.users ?? []} profiles={profiles} />
+      <div className="grid gap-8 lg:grid-cols-12">
+        {/* Left: Trending Notes (narrower) */}
+        <div className="lg:col-span-5">
+          <TrendingNotes notes={trendingNotes?.notes ?? []} profiles={profiles} />
+        </div>
+        {/* Right: User Discovery */}
+        <div className="flex flex-col gap-8 lg:col-span-7">
+          <NewUsers users={newUsers?.users ?? []} profiles={profiles} />
+          <TrendingUsers users={trendingUsers?.users ?? []} profiles={profiles} />
+        </div>
       </div>
     </div>
   );
