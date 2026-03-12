@@ -1,0 +1,100 @@
+import { cache } from "react";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse } from "./types";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
+
+async function handleResponse<T>(res: Response) {
+  if (!res.ok) {
+    throw new Error(`nostr-api request failed (${res.status})`);
+  }
+
+  return (await res.json()) as T;
+}
+
+function buildQuery(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
+}
+
+async function fetchFromApi<T>(path: string, options?: { revalidate?: number }) {
+  const url = `${API_BASE_URL}${path}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      next: { revalidate: options?.revalidate ?? 30 },
+    });
+    return await handleResponse<T>(res);
+  } catch (error) {
+    console.error(`[nostrarchives] Failed to fetch ${path}`, error);
+    return null;
+  }
+}
+
+export const getGlobalStats = cache(async () => {
+  return fetchFromApi<StatsResponse>("/v1/stats", { revalidate: 30 });
+});
+
+export async function getTopNotes(metric: "likes" | "zaps", range: "all_time" | "today", limit = 6) {
+  const path = `/v1/notes/${metric}/top${range === "today" ? "/today" : ""}${buildQuery({ limit })}`;
+  return fetchFromApi<TopNotesResponse>(path, { revalidate: range === "today" ? 15 : 120 });
+}
+
+export async function getRecentEvents(params?: {
+  pubkey?: string;
+  kind?: number;
+  limit?: number;
+  search?: string;
+  since?: number;
+}) {
+  const query = buildQuery({
+    pubkey: params?.pubkey,
+    kind: params?.kind,
+    limit: params?.limit ?? 20,
+    search: params?.search,
+    since: params?.since,
+  });
+  return fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`, { revalidate: 10 });
+}
+
+export async function getEventById(id: string) {
+  return fetchFromApi<StoredEvent>(`/v1/events/${id}`, { revalidate: 30 });
+}
+
+export async function getEventThread(id: string) {
+  return fetchFromApi<ThreadResponse>(`/v1/events/${id}/thread`, { revalidate: 30 });
+}
+
+export async function getEventInteractions(id: string) {
+  return fetchFromApi<InteractionResponse>(`/v1/events/${id}/interactions`, { revalidate: 30 });
+}
+
+export async function getSocialGraph(pubkey: string) {
+  return fetchFromApi<SocialResponse>(`/v1/social/${pubkey}`, { revalidate: 60 });
+}
+
+export async function getProfileMetadata(pubkey: string) {
+  const query = buildQuery({ pubkey, kind: 0, limit: 1 });
+  const response = await fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`, { revalidate: 300 });
+
+  if (!response) return null;
+
+  const events = Array.isArray(response) ? response : response.events;
+  const latest = events?.[0];
+
+  if (!latest) return null;
+
+  try {
+    const metadata = typeof latest.content === "string" ? JSON.parse(latest.content) : latest.content;
+    return { metadata, event: latest };
+  } catch (error) {
+    console.warn(`[nostrarchives] Failed to parse profile metadata for ${pubkey}`, error);
+    return { metadata: null, event: latest };
+  }
+}

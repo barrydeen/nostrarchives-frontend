@@ -1,0 +1,48 @@
+import { TopNotesResponse } from "@/lib/types";
+import { NoteCard } from "@/components/cards/NoteCard";
+
+interface TrendingSectionProps {
+  likes?: TopNotesResponse | null;
+  zaps?: TopNotesResponse | null;
+}
+
+export function TrendingSection({ likes, zaps }: TrendingSectionProps) {
+  const columns = [
+    { label: "Top likes", dataset: likes },
+    { label: "Top zaps", dataset: zaps },
+  ];
+
+  return (
+    <section className="rounded-[32px] border border-white/10 bg-surface/70 p-6 shadow-2xl">
+      <div className="flex flex-col gap-3 border-b border-white/5 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.5em] text-white/60">Trending heatmaps</p>
+          <h2 className="mt-2 text-3xl font-semibold">What the network is rewarding</h2>
+        </div>
+        <p className="text-sm text-white/60">
+          Powered by <span className="font-semibold text-white">/v1/notes/likes|zaps/top</span>
+        </p>
+      </div>
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        {columns.map(({ label, dataset }) => (
+          <div key={label} className="space-y-4">
+            <div className="flex items-center justify-between text-sm text-white/70">
+              <span>{label}</span>
+              <span className="text-white/50">{dataset?.range === "today" ? "24h" : "All time"}</span>
+            </div>
+            <div className="grid gap-4">
+              {dataset?.notes?.slice(0, 4).map((entry) => (
+                <NoteCard
+                  key={entry.event.id}
+                  event={entry.event}
+                  metricValue={entry.count}
+                  metricLabel={dataset.metric}
+                />
+              )) || <p className="text-white/50">No data yet.</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
