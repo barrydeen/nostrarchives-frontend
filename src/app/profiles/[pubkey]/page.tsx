@@ -6,6 +6,7 @@ import { normalizeEvents } from "@/lib/normalizers";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { ProfileName } from "@/components/ProfileName";
+import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { formatNumber, truncateHex } from "@/lib/utils";
 
 interface ProfilePageProps {
@@ -47,54 +48,66 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const profile = metadata?.metadata ?? {};
   const name = profile.display_name || profile.name || truncateHex(pubkey);
-  const bio = profile.about ?? "No profile text yet.";
+  const bio = profile.about ?? "";
   const nip05 = profile.nip05 as string | undefined;
   const picture = typeof profile.picture === "string" ? profile.picture : undefined;
 
   return (
-    <div className="space-y-10">
-      <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center">
+    <div className="space-y-6">
+      {/* ── Compact Profile Header ── */}
+      <section className="rounded-2xl border border-white/10 bg-card/70 p-4 sm:p-5 shadow-xl">
+        {/* Top row: avatar + identity */}
+        <div className="flex items-start gap-4">
           <div
-            className="size-32 rounded-3xl border border-white/10 bg-gradient-to-br from-neon-pink/40 to-neon-blue/40 shadow-glow"
-            style={picture ? { backgroundImage: `url(${picture})`, backgroundSize: "cover" } : undefined}
+            className="size-16 sm:size-20 shrink-0 rounded-2xl border border-white/10 bg-gradient-to-br from-neon-pink/40 to-neon-blue/40 shadow-glow"
+            style={picture ? { backgroundImage: `url(${picture})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
           />
-          <div className="flex-1 space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-4xl font-semibold">{name}</h1>
-              <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70">{truncateHex(pubkey)}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-semibold truncate">{name}</h1>
+              <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-white/50 shrink-0">
+                {truncateHex(pubkey)}
+              </span>
             </div>
-            <p className="text-white/70">{bio}</p>
             {nip05 && (
-              <p className="inline-flex items-center gap-2 text-sm text-white/60">
-                <ExternalLink className="size-4" />
-                {nip05}
+              <p className="mt-0.5 inline-flex items-center gap-1.5 text-xs text-white/50 truncate max-w-full">
+                <ExternalLink className="size-3 shrink-0" />
+                <span className="truncate">{nip05}</span>
               </p>
             )}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-surface/80 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Followers</p>
-                <p className="text-2xl font-semibold">{formatNumber(social?.followers.count)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-surface/80 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Following</p>
-                <p className="text-2xl font-semibold">{formatNumber(social?.follows.count)}</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-surface/80 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/50">Notes indexed</p>
-                <p className="text-2xl font-semibold">{formatNumber(totalNotes)}</p>
-              </div>
+            {/* Inline stats row */}
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+              <span>
+                <span className="font-semibold text-white">{formatNumber(social?.followers.count)}</span>
+                <span className="ml-1 text-white/50">Followers</span>
+              </span>
+              <span>
+                <span className="font-semibold text-white">{formatNumber(social?.follows.count)}</span>
+                <span className="ml-1 text-white/50">Following</span>
+              </span>
+              <span>
+                <span className="font-semibold text-white">{formatNumber(totalNotes)}</span>
+                <span className="ml-1 text-white/50">Notes</span>
+              </span>
             </div>
           </div>
         </div>
+
+        {/* Bio — truncated to 2 lines on mobile */}
+        {bio && (
+          <div className="mt-3">
+            <TruncatedBio text={bio} maxLines={2} />
+          </div>
+        )}
       </section>
 
-      <section className="rounded-[32px] border border-white/10 bg-surface/70 p-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-          <h2 className="text-2xl font-semibold">Latest notes</h2>
-          <span className="text-sm text-white/50">/v1/events?pubkey={pubkey}</span>
+      {/* ── Notes Feed ── */}
+      <section>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Notes</h2>
+          <span className="text-xs text-white/30">{formatNumber(totalNotes)} indexed</span>
         </div>
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           {events.map((event) => (
             <UnifiedNoteCard
               key={event.id}
@@ -112,40 +125,41 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
       </section>
 
-      <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
+      {/* ── Network ── */}
+      <section className="rounded-2xl border border-white/10 bg-card/70 p-4 sm:p-5 shadow-xl">
         <div className="flex items-center gap-2 text-white/60">
           <Users className="size-4" />
-          <h2 className="text-lg font-semibold">Network</h2>
+          <h2 className="text-base font-semibold">Network</h2>
         </div>
-        <div className="mt-4 grid gap-6 md:grid-cols-2">
+        <div className="mt-3 grid gap-5 md:grid-cols-2">
           <div>
-            <p className="text-sm text-white/60">Following</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <p className="text-xs text-white/50 mb-2">Following</p>
+            <div className="flex flex-wrap gap-1.5">
               {social?.follows.pubkeys.slice(0, 18).map((follow) => (
                 <Link
                   key={follow}
                   href={`/profiles/${follow}`}
                   prefetch={false}
-                  className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                  className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/70 hover:border-white/20 transition-colors"
                 >
-                  <ProfileName pubkey={follow} profile={networkProfiles.get(follow)} className="text-xs" />
+                  <ProfileName pubkey={follow} profile={networkProfiles.get(follow)} className="text-xs" showAvatar />
                 </Link>
-              )) || <p className="text-sm text-white/50">No data yet.</p>}
+              )) || <p className="text-xs text-white/40">No data yet.</p>}
             </div>
           </div>
           <div>
-            <p className="text-sm text-white/60">Followers</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <p className="text-xs text-white/50 mb-2">Followers</p>
+            <div className="flex flex-wrap gap-1.5">
               {social?.followers.pubkeys.slice(0, 18).map((follower) => (
                 <Link
                   key={follower}
                   href={`/profiles/${follower}`}
                   prefetch={false}
-                  className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
+                  className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/70 hover:border-white/20 transition-colors"
                 >
-                  <ProfileName pubkey={follower} profile={networkProfiles.get(follower)} className="text-xs" />
+                  <ProfileName pubkey={follower} profile={networkProfiles.get(follower)} className="text-xs" showAvatar />
                 </Link>
-              )) || <p className="text-sm text-white/50">No data yet.</p>}
+              )) || <p className="text-xs text-white/40">No data yet.</p>}
             </div>
           </div>
         </div>
