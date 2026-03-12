@@ -4,7 +4,6 @@ import { Search, User2, MessageSquare } from "lucide-react";
 import { search, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { truncateHex, formatNumber } from "@/lib/utils";
-import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SafeAvatar } from "@/components/search/SafeAvatar";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
@@ -47,9 +46,7 @@ export default async function SearchPage({ searchParams }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <SiteHeader />
-
+    <main className="mx-auto max-w-6xl">
       <div className="mb-8 max-w-2xl">
         <SearchBar />
       </div>

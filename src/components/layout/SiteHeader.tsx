@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, Radio, Database } from "lucide-react";
+import { Radio } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 
 const navItems = [
@@ -10,54 +10,35 @@ const navItems = [
 
 export function SiteHeader() {
   return (
-    <header className="mb-10 flex flex-col gap-4 rounded-3xl border border-white/5 bg-surface/80 px-6 py-5 backdrop-blur-xl">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-gradient-to-tr from-neon-pink/30 via-neon-blue/40 to-neon-green/30 p-2 shadow-glow">
-            <Radio className="size-5 text-white" />
+    <header className="sticky top-0 z-50 border-b border-white/5 bg-background/80 backdrop-blur-xl">
+      <div className="mx-auto flex items-center gap-4 px-4 py-2.5 sm:px-8 lg:px-16">
+        {/* Logo */}
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <div className="rounded-lg bg-gradient-to-tr from-neon-pink/30 via-neon-blue/40 to-neon-green/30 p-1.5 shadow-glow">
+            <Radio className="size-4 text-white" />
           </div>
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-white/60">Nostr Archives</p>
-            <h1 className="text-2xl font-semibold">Network Explorer</h1>
-          </div>
-        </div>
+          <span className="hidden text-sm font-semibold tracking-wide text-white sm:inline">
+            Nostr Archives
+          </span>
+        </Link>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <nav className="flex gap-2">
-            {navItems.map((nav) => (
-              <Link
-                key={nav.href}
-                href={nav.href}
-                className="rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-white/80 transition hover:border-white/30 hover:text-white"
-              >
-                {nav.label}
-              </Link>
-            ))}
-          </nav>
-          <div className="flex gap-2">
+        {/* Nav links */}
+        <nav className="flex items-center gap-1">
+          {navItems.map((nav) => (
             <Link
-              href="https://api.nostrarchives.com/v1/stats"
-              target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-sm font-medium text-white/80 hover:text-white"
+              key={nav.href}
+              href={nav.href}
+              className="rounded-full px-3 py-1 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
             >
-              <Database className="size-3.5" />
-              API
+              {nav.label}
             </Link>
-            <Link
-              href="https://github.com/barrydeen/nostrarchives-frontend"
-              target="_blank"
-              className="inline-flex items-center gap-1.5 rounded-full bg-white text-background px-3 py-1.5 text-sm font-semibold shadow-lg"
-            >
-              <Github className="size-3.5" />
-              GitHub
-            </Link>
-          </div>
-        </div>
-      </div>
+          ))}
+        </nav>
 
-      {/* Search bar */}
-      <div className="max-w-2xl">
-        <SearchBar compact />
+        {/* Search — grows to fill middle */}
+        <div className="ml-auto w-full max-w-md">
+          <SearchBar compact />
+        </div>
       </div>
     </header>
   );

@@ -1,4 +1,3 @@
-import { SiteHeader } from "@/components/layout/SiteHeader";
 import { NetworkStatsBar } from "@/components/home/NetworkStatsBar";
 import { TrendingNotes } from "@/components/home/TrendingNotes";
 import { NewUsers } from "@/components/home/NewUsers";
@@ -28,7 +27,6 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-10">
-      <SiteHeader />
       <NetworkStatsBar stats={dailyStats} />
       <TrendingNotes notes={trendingNotes?.notes ?? []} profiles={profiles} />
       <div className="grid gap-10 lg:grid-cols-2">
