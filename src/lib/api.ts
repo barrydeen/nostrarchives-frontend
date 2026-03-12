@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -120,6 +120,28 @@ export async function getTrendingUsers(limit = 20) {
 export const getDailyStats = cache(async () => {
   return fetchFromApi<DailyStatsResponse>("/v1/stats/daily", { revalidate: 30 });
 });
+
+// ─── Search ─────────────────────────────────────────────────────────
+
+export async function search(
+  q: string,
+  type: "all" | "profiles" | "notes" = "all",
+  limit = 20,
+  offset = 0,
+) {
+  const query = buildQuery({ q, type, limit, offset });
+  return fetchFromApi<SearchResponse>(`/v1/search${query}`, { revalidate: 5 });
+}
+
+export async function searchSuggest(q: string, limit = 5) {
+  const url = `${API_BASE_URL}/v1/search/suggest${buildQuery({ q, limit })}`;
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return (await res.json()) as SuggestResponse;
+}
 
 export async function getProfileMetadata(pubkey: string) {
   const query = buildQuery({ pubkey, kind: 0, limit: 1 });

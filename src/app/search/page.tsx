@@ -1,0 +1,202 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Search, User2, MessageSquare, Zap, Heart, Repeat2, Reply } from "lucide-react";
+import { search } from "@/lib/api";
+import { truncateHex, formatNumber, formatRelative } from "@/lib/utils";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SearchBar } from "@/components/search/SearchBar";
+import type { ProfileSearchResult, NoteSearchResult } from "@/lib/types";
+
+interface Props {
+  searchParams: Promise<{ q?: string; type?: string }>;
+}
+
+export default async function SearchPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const query = params.q?.trim() ?? "";
+  const searchType = (params.type as "all" | "profiles" | "notes") || "all";
+
+  if (!query) {
+    redirect("/");
+  }
+
+  const results = await search(query, searchType, 30);
+
+  const profiles = results?.profiles ?? [];
+  const notes = results?.notes ?? [];
+
+  // If entity was resolved, redirect directly
+  if (results?.resolved) {
+    const r = results.resolved;
+    if (r.type === "profile" && r.pubkey) {
+      redirect(`/profiles/${r.pubkey}`);
+    }
+    if (r.type === "event" && r.id) {
+      redirect(`/notes/${r.id}`);
+    }
+  }
+
+  return (
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <SiteHeader />
+
+      <div className="mb-8 max-w-2xl">
+        <SearchBar />
+      </div>
+
+      <h2 className="mb-6 text-lg font-semibold text-white/90">
+        Results for &ldquo;{query}&rdquo;
+        <span className="ml-2 text-sm font-normal text-white/50">
+          {profiles.length + notes.length} found
+        </span>
+      </h2>
+
+      {/* Type filter tabs */}
+      <div className="mb-6 flex gap-2">
+        {(["all", "profiles", "notes"] as const).map((t) => (
+          <Link
+            key={t}
+            href={`/search?q=${encodeURIComponent(query)}&type=${t}`}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+              searchType === t
+                ? "border-white/30 bg-white/10 text-white"
+                : "border-white/10 text-white/50 hover:border-white/20 hover:text-white/80"
+            }`}
+          >
+            {t === "all" ? "All" : t === "profiles" ? "Profiles" : "Notes"}
+          </Link>
+        ))}
+      </div>
+
+      <div className="space-y-8">
+        {/* Profiles section */}
+        {profiles.length > 0 && (
+          <section>
+            {searchType === "all" && (
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-white/50">
+                <User2 className="size-4" /> Profiles
+              </h3>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {profiles.map((profile) => (
+                <ProfileCard key={profile.pubkey} profile={profile} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Notes section */}
+        {notes.length > 0 && (
+          <section>
+            {searchType === "all" && (
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-white/50">
+                <MessageSquare className="size-4" /> Notes
+              </h3>
+            )}
+            <div className="space-y-3">
+              {notes.map((note) => (
+                <NoteResult key={note.event.id} note={note} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state */}
+        {profiles.length === 0 && notes.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Search className="mb-4 size-10 text-white/20" />
+            <p className="text-lg font-medium text-white/60">No results found</p>
+            <p className="mt-1 text-sm text-white/40">
+              Try a different query, or paste an npub / nevent / note1 for direct lookup.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+
+function ProfileCard({ profile }: { profile: ProfileSearchResult }) {
+  const name = profile.display_name || profile.name || truncateHex(profile.pubkey);
+
+  return (
+    <Link
+      href={`/profiles/${profile.pubkey}`}
+      className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-white/15 hover:bg-white/[0.04]"
+    >
+      {profile.picture ? (
+        <img
+          src={profile.picture}
+          alt=""
+          className="size-12 shrink-0 rounded-full bg-white/10 object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <User2 className="size-5 text-white/40" />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-white group-hover:text-white/90">
+          {name}
+        </p>
+        {profile.nip05 && (
+          <p className="truncate text-xs text-neon-green/70">{profile.nip05}</p>
+        )}
+        <div className="mt-1 flex items-center gap-3 text-xs text-white/40">
+          <span>{formatNumber(profile.follower_count)} followers</span>
+          {profile.engagement_score > 0 && (
+            <span>{formatNumber(profile.engagement_score)} eng</span>
+          )}
+        </div>
+        {profile.about && (
+          <p className="mt-1 line-clamp-1 text-xs text-white/30">{profile.about}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function NoteResult({ note }: { note: NoteSearchResult }) {
+  const content = note.event.content.length > 280
+    ? note.event.content.slice(0, 280) + "…"
+    : note.event.content;
+
+  return (
+    <Link
+      href={`/notes/${note.event.id}`}
+      className="group block rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-white/15 hover:bg-white/[0.04]"
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs text-white/40">
+          {truncateHex(note.event.pubkey)} · {formatRelative(note.event.created_at)}
+        </span>
+      </div>
+      <p className="text-sm leading-relaxed text-white/80">{content}</p>
+      <div className="mt-3 flex items-center gap-4 text-xs text-white/40">
+        {note.reactions > 0 && (
+          <span className="flex items-center gap-1">
+            <Heart className="size-3" /> {formatNumber(note.reactions)}
+          </span>
+        )}
+        {note.replies > 0 && (
+          <span className="flex items-center gap-1">
+            <Reply className="size-3" /> {formatNumber(note.replies)}
+          </span>
+        )}
+        {note.reposts > 0 && (
+          <span className="flex items-center gap-1">
+            <Repeat2 className="size-3" /> {formatNumber(note.reposts)}
+          </span>
+        )}
+        {note.zaps > 0 && (
+          <span className="flex items-center gap-1">
+            <Zap className="size-3" /> {formatNumber(note.zaps)}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}

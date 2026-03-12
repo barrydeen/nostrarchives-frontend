@@ -117,3 +117,49 @@ export interface DailyStatsResponse {
   total_sats_sent: number;
   daily_posts: number;
 }
+
+// ─── Search ─────────────────────────────────────────────────────────
+
+export interface ProfileSearchResult {
+  pubkey: string;
+  name: string | null;
+  display_name: string | null;
+  nip05: string | null;
+  about: string | null;
+  picture: string | null;
+  follower_count: number;
+  engagement_score: number;
+  last_active_at: number;
+  rank_score: number;
+}
+
+export interface NoteSearchResult {
+  event: StoredEvent;
+  rank_score: number;
+  reactions: number;
+  replies: number;
+  reposts: number;
+  zaps: number;
+}
+
+export interface ResolvedEntity {
+  type: "profile" | "event";
+  pubkey?: string;
+  id?: string;
+  relays?: string[];
+  author?: string;
+  kind?: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  resolved?: ResolvedEntity;
+  profiles?: ProfileSearchResult[];
+  notes?: NoteSearchResult[];
+}
+
+export interface SuggestResponse {
+  query: string;
+  resolved?: ResolvedEntity;
+  suggestions: ProfileSearchResult[];
+}
