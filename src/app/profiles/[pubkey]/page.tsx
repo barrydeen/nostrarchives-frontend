@@ -53,7 +53,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const picture = typeof profile.picture === "string" ? profile.picture : undefined;
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {/* ── Compact Profile Header ── */}
       <section className="rounded-2xl border border-white/10 bg-card/70 p-4 sm:p-5 shadow-xl">
         {/* Top row: avatar + identity */}

@@ -89,7 +89,7 @@ export function UnifiedNoteCard({
   if (variant === "compact") {
     return (
       <div
-        className={`group relative flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition hover:border-white/15 hover:bg-card/80 cursor-pointer ${className}`}
+        className={`group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition hover:border-white/15 hover:bg-card/80 cursor-pointer ${className}`}
       >
         <CardLink eventId={event.id} />
         {rank != null && (
@@ -117,7 +117,7 @@ export function UnifiedNoteCard({
 
   if (variant === "hero") {
     return (
-      <div className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 cursor-pointer ${className}`}>
+      <div className={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 cursor-pointer ${className}`}>
         <CardLink eventId={event.id} />
         <div className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-neon-pink/[0.04]" />
         <div className="flex items-center justify-between">
@@ -155,7 +155,7 @@ export function UnifiedNoteCard({
 
   // Default variant
   return (
-    <div className={`relative flex h-full flex-col rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 cursor-pointer ${className}`}>
+    <div className={`relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 cursor-pointer ${className}`}>
       <CardLink eventId={event.id} />
       <div className="flex items-center justify-between">
         <span className="relative z-10">
