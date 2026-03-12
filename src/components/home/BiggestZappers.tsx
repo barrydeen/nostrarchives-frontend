@@ -57,7 +57,7 @@ export function BiggestZappers({ sent, received, profiles }: BiggestZappersProps
       {!zappers.length ? (
         <p className="text-sm text-white/40">No zaps in the last 24 hours.</p>
       ) : (
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
           {zappers.map((zapper, index) => {
             const profile = profiles.get(zapper.pubkey);
             const name = profile?.preferred_name || truncateHex(zapper.pubkey);
