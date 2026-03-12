@@ -79,3 +79,41 @@ export interface ProfileMetadataEntry {
 export interface ProfilesMetadataResponse {
   profiles: ProfileMetadataEntry[];
 }
+
+export interface TrendingNote {
+  event: StoredEvent;
+  score: number;
+  zap_sats: number;
+  reposts: number;
+  replies: number;
+  reactions: number;
+}
+
+export interface TrendingNotesResponse {
+  notes: TrendingNote[];
+}
+
+export interface NewUser {
+  pubkey: string;
+  first_seen: number;
+  event_count: number;
+}
+
+export interface NewUsersResponse {
+  users: NewUser[];
+}
+
+export interface TrendingUser {
+  pubkey: string;
+  new_followers: number;
+}
+
+export interface TrendingUsersResponse {
+  users: TrendingUser[];
+}
+
+export interface DailyStatsResponse {
+  daily_active_users: number;
+  total_sats_sent: number;
+  daily_posts: number;
+}
