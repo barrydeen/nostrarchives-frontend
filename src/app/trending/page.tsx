@@ -53,8 +53,8 @@ export default async function TrendingPage() {
                   key={`${section.title}-${entry.event.id}`}
                   event={entry.event}
                   profile={profiles.get(entry.event.pubkey)}
-                  metricValue={entry.count}
-                  metricLabel={section.data?.metric}
+                  metricValue={section.data?.metric === "zaps" ? (entry.total_sats ?? entry.count) : entry.count}
+                  metricLabel={section.data?.metric === "zaps" ? "sats" : section.data?.metric}
                 />
               )) || <p className="text-white/60">No data right now.</p>}
             </div>

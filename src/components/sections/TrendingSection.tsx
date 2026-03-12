@@ -37,8 +37,8 @@ export function TrendingSection({ likes, zaps, profiles }: TrendingSectionProps)
                   key={entry.event.id}
                   event={entry.event}
                   profile={profiles?.get(entry.event.pubkey)}
-                  metricValue={entry.count}
-                  metricLabel={dataset.metric}
+                  metricValue={dataset.metric === "zaps" ? (entry.total_sats ?? entry.count) : entry.count}
+                  metricLabel={dataset.metric === "zaps" ? "sats" : dataset.metric}
                 />
               )) || <p className="text-white/50">No data yet.</p>}
             </div>
