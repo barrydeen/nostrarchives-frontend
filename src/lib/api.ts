@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -77,6 +77,32 @@ export async function getEventInteractions(id: string) {
 
 export async function getSocialGraph(pubkey: string) {
   return fetchFromApi<SocialResponse>(`/v1/social/${pubkey}`, { revalidate: 60 });
+}
+
+/** Bulk-fetch profile metadata for up to 500 pubkeys. */
+export async function getBulkProfileMetadata(pubkeys: string[]): Promise<Map<string, ProfileMetadataEntry>> {
+  const map = new Map<string, ProfileMetadataEntry>();
+  if (!pubkeys.length) return map;
+
+  const unique = [...new Set(pubkeys)];
+  const url = `${API_BASE_URL}/v1/profiles/metadata`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ pubkeys: unique }),
+      next: { revalidate: 300 },
+    });
+    const data = await handleResponse<ProfilesMetadataResponse>(res);
+    for (const profile of data.profiles) {
+      map.set(profile.pubkey, profile);
+    }
+  } catch (error) {
+    console.error("[nostrarchives] Failed to fetch bulk profile metadata", error);
+  }
+
+  return map;
 }
 
 export async function getProfileMetadata(pubkey: string) {

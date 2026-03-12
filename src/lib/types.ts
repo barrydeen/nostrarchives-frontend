@@ -62,3 +62,15 @@ export interface InteractionResponse {
   reposts?: number;
   zaps?: number;
 }
+
+export interface ProfileMetadataEntry {
+  pubkey: string;
+  display_name: string | null;
+  name: string | null;
+  preferred_name: string | null;
+  picture: string | null;
+}
+
+export interface ProfilesMetadataResponse {
+  profiles: ProfileMetadataEntry[];
+}

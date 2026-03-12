@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Zap, Heart, ArrowUpRight } from "lucide-react";
-import { truncateHex } from "@/lib/utils";
+import { ProfileMetadataEntry } from "@/lib/types";
+import { ProfileName } from "@/components/ProfileName";
 
 interface SpotlightProfile {
   pubkey: string;
@@ -10,9 +11,10 @@ interface SpotlightProfile {
 
 interface ProfileSpotlightProps {
   profiles: SpotlightProfile[];
+  profileMetadata?: Map<string, ProfileMetadataEntry>;
 }
 
-export function ProfileSpotlight({ profiles }: ProfileSpotlightProps) {
+export function ProfileSpotlight({ profiles, profileMetadata }: ProfileSpotlightProps) {
   return (
     <section className="rounded-[32px] border border-white/10 bg-gradient-to-br from-card/80 via-surface/60 to-card/40 p-6 shadow-2xl">
       <div className="flex flex-col gap-2 border-b border-white/5 pb-5 sm:flex-row sm:items-end sm:justify-between">
@@ -32,7 +34,7 @@ export function ProfileSpotlight({ profiles }: ProfileSpotlightProps) {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-white/60">{truncateHex(profile.pubkey)}</p>
+                <ProfileName pubkey={profile.pubkey} profile={profileMetadata?.get(profile.pubkey)} className="text-sm text-white/60" />
                 <h3 className="text-2xl font-semibold">{(profile.likes + profile.zaps).toLocaleString()} signals</h3>
               </div>
               <ArrowUpRight className="size-5 text-white/60 transition group-hover:translate-x-1 group-hover:-translate-y-1" />

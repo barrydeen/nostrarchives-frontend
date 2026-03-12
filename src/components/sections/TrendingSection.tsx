@@ -1,12 +1,13 @@
-import { TopNotesResponse } from "@/lib/types";
+import { TopNotesResponse, ProfileMetadataEntry } from "@/lib/types";
 import { NoteCard } from "@/components/cards/NoteCard";
 
 interface TrendingSectionProps {
   likes?: TopNotesResponse | null;
   zaps?: TopNotesResponse | null;
+  profiles?: Map<string, ProfileMetadataEntry>;
 }
 
-export function TrendingSection({ likes, zaps }: TrendingSectionProps) {
+export function TrendingSection({ likes, zaps, profiles }: TrendingSectionProps) {
   const columns = [
     { label: "Top likes", dataset: likes },
     { label: "Top zaps", dataset: zaps },
@@ -35,6 +36,7 @@ export function TrendingSection({ likes, zaps }: TrendingSectionProps) {
                 <NoteCard
                   key={entry.event.id}
                   event={entry.event}
+                  profile={profiles?.get(entry.event.pubkey)}
                   metricValue={entry.count}
                   metricLabel={dataset.metric}
                 />

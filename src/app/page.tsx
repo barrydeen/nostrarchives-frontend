@@ -3,7 +3,7 @@ import { TrendingSection } from "@/components/sections/TrendingSection";
 import { ActivityFeed } from "@/components/sections/ActivityFeed";
 import { ProfileSpotlight } from "@/components/sections/ProfileSpotlight";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { getGlobalStats, getRecentEvents, getTopNotes } from "@/lib/api";
+import { getGlobalStats, getRecentEvents, getTopNotes, getBulkProfileMetadata } from "@/lib/api";
 import { TopNotesResponse } from "@/lib/types";
 import { normalizeEvents } from "@/lib/normalizers";
 
@@ -53,13 +53,25 @@ export default async function HomePage() {
   const spotlight = buildSpotlight(likesAllTime, zapsAllTime);
   const events = normalizeEvents(recentEvents);
 
+  // Collect all pubkeys from trending notes, spotlight, and activity feed
+  const allPubkeys = new Set<string>();
+  const addNotes = (data?: TopNotesResponse | null) => data?.notes?.forEach((n) => allPubkeys.add(n.event.pubkey));
+  addNotes(likesToday);
+  addNotes(likesAllTime);
+  addNotes(zapsToday);
+  addNotes(zapsAllTime);
+  spotlight.forEach((p) => allPubkeys.add(p.pubkey));
+  events?.forEach((e) => allPubkeys.add(e.pubkey));
+
+  const profiles = await getBulkProfileMetadata([...allPubkeys]);
+
   return (
     <div className="space-y-12">
       <SiteHeader />
       <HeroSection stats={stats} highlights={heroHighlights} />
-      <TrendingSection likes={likesToday ?? likesAllTime} zaps={zapsToday ?? zapsAllTime} />
-      {spotlight.length > 0 && <ProfileSpotlight profiles={spotlight} />}
-      <ActivityFeed events={events} />
+      <TrendingSection likes={likesToday ?? likesAllTime} zaps={zapsToday ?? zapsAllTime} profiles={profiles} />
+      {spotlight.length > 0 && <ProfileSpotlight profiles={spotlight} profileMetadata={profiles} />}
+      <ActivityFeed events={events} profiles={profiles} />
     </div>
   );
 }

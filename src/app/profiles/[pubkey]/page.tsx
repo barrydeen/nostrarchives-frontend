@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { getProfileMetadata, getRecentEvents, getSocialGraph } from "@/lib/api";
+import { getProfileMetadata, getRecentEvents, getSocialGraph, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
 import { NoteCard } from "@/components/cards/NoteCard";
+import { ProfileName } from "@/components/ProfileName";
 import { formatNumber, truncateHex } from "@/lib/utils";
 
 interface ProfilePageProps {
@@ -29,6 +30,14 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   ]);
 
   const events = normalizeEvents(eventsResponse);
+
+  // Bulk-fetch profile names for follows/followers chips shown on this page
+  const networkPubkeys = [
+    ...(social?.follows.pubkeys.slice(0, 18) ?? []),
+    ...(social?.followers.pubkeys.slice(0, 18) ?? []),
+  ];
+  const networkProfiles = await getBulkProfileMetadata(networkPubkeys);
+
   const profile = metadata?.metadata ?? {};
   const name = profile.display_name || profile.name || truncateHex(pubkey);
   const bio = profile.about ?? "No profile text yet.";
@@ -109,7 +118,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   prefetch={false}
                   className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
                 >
-                  {truncateHex(follow)}
+                  <ProfileName pubkey={follow} profile={networkProfiles.get(follow)} className="text-xs" />
                 </Link>
               )) || <p className="text-sm text-white/50">No data yet.</p>}
             </div>
@@ -124,7 +133,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                   prefetch={false}
                   className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
                 >
-                  {truncateHex(follower)}
+                  <ProfileName pubkey={follower} profile={networkProfiles.get(follower)} className="text-xs" />
                 </Link>
               )) || <p className="text-sm text-white/50">No data yet.</p>}
             </div>
