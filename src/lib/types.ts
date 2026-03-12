@@ -185,6 +185,27 @@ export interface TopNotesUnifiedResponse {
   }>;
 }
 
+// ─── Advanced Note Search ───────────────────────────────────────────
+
+export interface AdvancedSearchNote {
+  event: StoredEvent;
+  reactions: number;
+  replies: number;
+  reposts: number;
+  zap_sats: number;
+}
+
+export interface AdvancedSearchResponse {
+  notes: AdvancedSearchNote[];
+  total: number;
+  profiles: Record<string, {
+    name: string | null;
+    display_name: string | null;
+    picture: string | null;
+    nip05: string | null;
+  }>;
+}
+
 // ─── Search ─────────────────────────────────────────────────────────
 
 export interface ProfileSearchResult {
