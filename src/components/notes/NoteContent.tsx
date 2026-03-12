@@ -16,8 +16,6 @@ interface NoteContentProps {
 // Patterns
 const IMAGE_EXT = /\.(jpe?g|png|gif|webp|svg|avif)(\?[^\s]*)?$/i;
 const VIDEO_EXT = /\.(mp4|webm|mov|m3u8)(\?[^\s]*)?$/i;
-const URL_REGEX = /(https?:\/\/[^\s<>")\]]+)/g;
-const NOSTR_MENTION = /nostr:(npub1[a-z0-9]+|nprofile1[a-z0-9]+|note1[a-z0-9]+|nevent1[a-z0-9]+)/g;
 // Combined split regex — captures both URLs and nostr mentions as groups
 const SPLIT_REGEX = /(https?:\/\/[^\s<>")\]]+|nostr:(?:npub1|nprofile1|note1|nevent1)[a-z0-9]+)/g;
 

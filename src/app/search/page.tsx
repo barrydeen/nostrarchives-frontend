@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Search, User2, MessageSquare } from "lucide-react";
-import { search } from "@/lib/api";
+import { search, getBulkProfileMetadata } from "@/lib/api";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { truncateHex, formatNumber } from "@/lib/utils";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SearchBar } from "@/components/search/SearchBar";
@@ -26,6 +27,13 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const profiles = results?.profiles ?? [];
   const notes = results?.notes ?? [];
+
+  // Resolve note authors + mentioned pubkeys for @DisplayName rendering
+  const noteEvents = notes.map((n) => n.event);
+  const pubkeys = new Set<string>();
+  noteEvents.forEach((e) => pubkeys.add(e.pubkey));
+  extractMentionPubkeysFromEvents(noteEvents).forEach((pk) => pubkeys.add(pk));
+  const noteProfiles = await getBulkProfileMetadata([...pubkeys]);
 
   // If entity was resolved, redirect directly
   if (results?.resolved) {
@@ -100,6 +108,8 @@ export default async function SearchPage({ searchParams }: Props) {
                 <UnifiedNoteCard
                   key={note.event.id}
                   event={note.event}
+                  profile={noteProfiles.get(note.event.pubkey)}
+                  profiles={noteProfiles}
                   engagement={{
                     reactions: note.reactions,
                     replies: note.replies,

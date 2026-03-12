@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getProfileMetadata, getRecentEvents, getSocialGraph, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { ProfileName } from "@/components/ProfileName";
 import { formatNumber, truncateHex } from "@/lib/utils";
@@ -35,12 +36,15 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     : events.length;
 
   // Bulk-fetch profile names for follows/followers chips and the page owner
-  const networkPubkeys = [
-    pubkey,
-    ...(social?.follows.pubkeys.slice(0, 18) ?? []),
-    ...(social?.followers.pubkeys.slice(0, 18) ?? []),
-  ];
-  const networkProfiles = await getBulkProfileMetadata(networkPubkeys);
+  const networkPubkeys = new Set<string>();
+  networkPubkeys.add(pubkey);
+  (social?.follows.pubkeys.slice(0, 18) ?? []).forEach((pk) => networkPubkeys.add(pk));
+  (social?.followers.pubkeys.slice(0, 18) ?? []).forEach((pk) => networkPubkeys.add(pk));
+
+  // Include mention pubkeys from latest notes so @DisplayName renders in content
+  extractMentionPubkeysFromEvents(events).forEach((pk) => networkPubkeys.add(pk));
+
+  const networkProfiles = await getBulkProfileMetadata([...networkPubkeys]);
 
   const profile = metadata?.metadata ?? {};
   const name = profile.display_name || profile.name || truncateHex(pubkey);

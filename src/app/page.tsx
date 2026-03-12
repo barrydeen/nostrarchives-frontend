@@ -4,6 +4,7 @@ import { TrendingNotes } from "@/components/home/TrendingNotes";
 import { NewUsers } from "@/components/home/NewUsers";
 import { TrendingUsers } from "@/components/home/TrendingUsers";
 import { getDailyStats, getTrendingNotes, getNewUsers, getTrendingUsers, getBulkProfileMetadata } from "@/lib/api";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 
 export default async function HomePage() {
   const [dailyStats, trendingNotes, newUsers, trendingUsers] = await Promise.all([
@@ -16,6 +17,10 @@ export default async function HomePage() {
   // Collect all pubkeys for bulk metadata fetch
   const allPubkeys = new Set<string>();
   trendingNotes?.notes?.forEach((n) => allPubkeys.add(n.event.pubkey));
+  // Also resolve mentioned npubs in note content so @DisplayName renders
+  if (trendingNotes?.notes?.length) {
+    extractMentionPubkeysFromEvents(trendingNotes.notes.map((n) => n.event)).forEach((pk) => allPubkeys.add(pk));
+  }
   newUsers?.users?.forEach((u) => allPubkeys.add(u.pubkey));
   trendingUsers?.users?.forEach((u) => allPubkeys.add(u.pubkey));
 

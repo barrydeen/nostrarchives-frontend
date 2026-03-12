@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getTopNotes, getBulkProfileMetadata } from "@/lib/api";
 import { TopNotesResponse } from "@/lib/types";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 
 export default async function TrendingPage() {
@@ -22,8 +23,11 @@ export default async function TrendingPage() {
 
   // Collect all pubkeys from all sections
   const allPubkeys = new Set<string>();
-  const collectPubkeys = (data: TopNotesResponse | null | undefined) =>
-    data?.notes?.forEach((n) => allPubkeys.add(n.event.pubkey));
+  const collectPubkeys = (data: TopNotesResponse | null | undefined) => {
+    const events = data?.notes?.map((n) => n.event) ?? [];
+    events.forEach((e) => allPubkeys.add(e.pubkey));
+    extractMentionPubkeysFromEvents(events).forEach((pk) => allPubkeys.add(pk));
+  };
   collectPubkeys(likesToday);
   collectPubkeys(likesAll);
   collectPubkeys(zapsToday);

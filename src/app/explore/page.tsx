@@ -3,6 +3,7 @@ import { ArrowLeft, Filter } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getRecentEvents, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 
 interface ExplorePageProps {
@@ -23,8 +24,10 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     limit,
   });
   const events = normalizeEvents(payload);
-  const pubkeys = events.map((e) => e.pubkey);
-  const profiles = await getBulkProfileMetadata(pubkeys);
+  const pubkeys = new Set<string>();
+  events.forEach((e) => pubkeys.add(e.pubkey));
+  extractMentionPubkeysFromEvents(events).forEach((pk) => pubkeys.add(pk));
+  const profiles = await getBulkProfileMetadata([...pubkeys]);
 
   return (
     <div className="space-y-10">

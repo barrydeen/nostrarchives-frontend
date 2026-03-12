@@ -6,6 +6,7 @@ import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
 import { getEventById, getEventInteractions, getEventThread, getBulkProfileMetadata } from "@/lib/api";
+import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
 import { formatRelative } from "@/lib/utils";
 
 interface NotePageProps {
@@ -43,6 +44,10 @@ export default async function NotePage({ params }: NotePageProps) {
   allPubkeys.add(event.pubkey);
   replies.forEach((r) => allPubkeys.add(r.pubkey));
   reactions.forEach((r) => allPubkeys.add(r.pubkey));
+
+  extractMentionPubkeys(event.content).forEach((pk) => allPubkeys.add(pk));
+  extractMentionPubkeysFromEvents(replies).forEach((pk) => allPubkeys.add(pk));
+
   const profiles = await getBulkProfileMetadata([...allPubkeys]);
 
   return (
