@@ -52,6 +52,20 @@ function EngagementBar({ engagement }: { engagement: NoteEngagement }) {
   );
 }
 
+/**
+ * Invisible stretched link covering the entire card.
+ * Profile links sit above via relative z-10.
+ */
+function CardLink({ eventId }: { eventId: string }) {
+  return (
+    <Link
+      href={`/notes/${eventId}`}
+      className="absolute inset-0 z-0"
+      aria-label="View note"
+    />
+  );
+}
+
 export function UnifiedNoteCard({
   event,
   profile,
@@ -74,10 +88,10 @@ export function UnifiedNoteCard({
 
   if (variant === "compact") {
     return (
-      <Link
-        href={`/notes/${event.id}`}
-        className={`group flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition hover:border-white/15 hover:bg-card/80 ${className}`}
+      <div
+        className={`group relative flex items-start gap-3 rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition hover:border-white/15 hover:bg-card/80 cursor-pointer ${className}`}
       >
+        <CardLink eventId={event.id} />
         {rank != null && (
           <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] font-mono text-xs font-bold text-white/40">
             {rank}
@@ -85,7 +99,9 @@ export function UnifiedNoteCard({
         )}
         <div className="min-w-0 flex-1 overflow-hidden">
           <div className="flex items-center gap-2">
-            <ProfileName pubkey={event.pubkey} profile={profile} className="text-xs text-white/60" showAvatar linked={false} />
+            <span className="relative z-10">
+              <ProfileName pubkey={event.pubkey} profile={profile} className="text-xs text-white/60" showAvatar />
+            </span>
             <span className="shrink-0 text-[10px] text-white/30">{formatRelative(event.created_at)}</span>
           </div>
           <div className="mt-1 text-sm">
@@ -95,16 +111,19 @@ export function UnifiedNoteCard({
             <EngagementBar engagement={engagement} />
           </div>
         </div>
-      </Link>
+      </div>
     );
   }
 
   if (variant === "hero") {
     return (
-      <div className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 ${className}`}>
+      <div className={`group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 cursor-pointer ${className}`}>
+        <CardLink eventId={event.id} />
         <div className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-neon-pink/[0.04]" />
         <div className="flex items-center justify-between">
-          <ProfileName pubkey={event.pubkey} profile={profile} className="text-sm text-white/70" />
+          <span className="relative z-10">
+            <ProfileName pubkey={event.pubkey} profile={profile} className="text-sm text-white/70" />
+          </span>
           {rank != null && (
             <span className="rounded-full bg-neon-pink/15 px-3 py-1 font-mono text-xs font-semibold text-neon-pink">
               #{rank}
@@ -125,15 +144,10 @@ export function UnifiedNoteCard({
         )}
         <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
           <EngagementBar engagement={engagement} />
-          <div className="flex shrink-0 items-center gap-3 text-xs text-white/40">
-            <span className="inline-flex items-center gap-1">
-              <Clock className="size-3" />
-              {formatRelative(event.created_at)}
-            </span>
-            <Link href={`/notes/${event.id}`} className="text-white/60 underline-offset-2 hover:text-white hover:underline">
-              Open
-            </Link>
-          </div>
+          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-white/40">
+            <Clock className="size-3" />
+            {formatRelative(event.created_at)}
+          </span>
         </div>
       </div>
     );
@@ -141,9 +155,12 @@ export function UnifiedNoteCard({
 
   // Default variant
   return (
-    <div className={`flex h-full flex-col rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 ${className}`}>
+    <div className={`relative flex h-full flex-col rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 cursor-pointer ${className}`}>
+      <CardLink eventId={event.id} />
       <div className="flex items-center justify-between">
-        <ProfileName pubkey={event.pubkey} profile={profile} className="text-xs text-white/60" />
+        <span className="relative z-10">
+          <ProfileName pubkey={event.pubkey} profile={profile} className="text-xs text-white/60" />
+        </span>
         <span className="shrink-0 text-[10px] text-white/30 inline-flex items-center gap-1">
           <Clock className="size-3" />
           {formatRelative(event.created_at)}
@@ -161,11 +178,8 @@ export function UnifiedNoteCard({
           ))}
         </div>
       )}
-      <div className="mt-4 flex items-center justify-between border-t border-white/[0.06] pt-3">
+      <div className="mt-4 border-t border-white/[0.06] pt-3">
         <EngagementBar engagement={engagement} />
-        <Link href={`/notes/${event.id}`} className="shrink-0 text-xs text-white/50 underline-offset-2 hover:text-white hover:underline">
-          Open →
-        </Link>
       </div>
     </div>
   );
