@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -168,6 +168,19 @@ export async function searchSuggest(q: string, limit = 5) {
   });
   if (!res.ok) return null;
   return (await res.json()) as SuggestResponse;
+}
+
+export async function advancedNoteSearch(params: {
+  q?: string;
+  exclude?: string;
+  author?: string;
+  reply_to?: string;
+  order?: "newest" | "oldest" | "engagement";
+  limit?: number;
+  offset?: number;
+}) {
+  const query = buildQuery(params);
+  return fetchFromApi<AdvancedSearchResponse>(`/v1/notes/search${query}`, { revalidate: 10 });
 }
 
 export async function getProfileMetadata(pubkey: string) {
