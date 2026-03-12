@@ -13,7 +13,7 @@ interface BiggestZappersProps {
 }
 
 export function BiggestZappers({ sent, received, profiles }: BiggestZappersProps) {
-  const [direction, setDirection] = useState<"received" | "sent">("received");
+  const [direction, setDirection] = useState<"received" | "sent">("sent");
   const zappers = direction === "received" ? received : sent;
 
   return (
@@ -30,17 +30,6 @@ export function BiggestZappers({ sent, received, profiles }: BiggestZappersProps
         </div>
         <div className="flex overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.03]">
           <button
-            onClick={() => setDirection("received")}
-            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition ${
-              direction === "received"
-                ? "bg-neon-amber/15 text-neon-amber"
-                : "text-white/40 hover:text-white/60"
-            }`}
-          >
-            <ArrowDown className="size-3" />
-            Received
-          </button>
-          <button
             onClick={() => setDirection("sent")}
             className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition ${
               direction === "sent"
@@ -50,6 +39,17 @@ export function BiggestZappers({ sent, received, profiles }: BiggestZappersProps
           >
             <ArrowUp className="size-3" />
             Sent
+          </button>
+          <button
+            onClick={() => setDirection("received")}
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium transition ${
+              direction === "received"
+                ? "bg-neon-amber/15 text-neon-amber"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            <ArrowDown className="size-3" />
+            Received
           </button>
         </div>
       </div>
