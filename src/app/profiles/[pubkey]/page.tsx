@@ -105,7 +105,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {events.map((event) => (
-            <UnifiedNoteCard key={event.id} event={event} profile={networkProfiles.get(event.pubkey)} profiles={networkProfiles} />
+            <UnifiedNoteCard
+              key={event.id}
+              event={event}
+              profile={networkProfiles.get(event.pubkey)}
+              profiles={networkProfiles}
+              engagement={{
+                reactions: event.reactions ?? 0,
+                replies: event.replies ?? 0,
+                reposts: event.reposts ?? 0,
+                zap_sats: event.zap_sats ?? 0,
+              }}
+            />
           ))}
         </div>
       </section>

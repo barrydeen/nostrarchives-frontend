@@ -59,8 +59,10 @@ export default async function TrendingPage() {
                   profile={profiles.get(entry.event.pubkey)}
                   profiles={profiles}
                   engagement={{
-                    reactions: section.data?.metric === "likes" ? entry.count : undefined,
-                    zap_sats: section.data?.metric === "zaps" ? (entry.total_sats ?? entry.count) : undefined,
+                    reactions: entry.reactions ?? 0,
+                    replies: entry.replies ?? 0,
+                    reposts: entry.reposts ?? 0,
+                    zap_sats: entry.zap_sats ?? 0,
                   }}
                 />
               )) || <p className="text-white/60">No data right now.</p>}
