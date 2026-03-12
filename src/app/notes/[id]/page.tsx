@@ -5,7 +5,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
-import { getEventById, getEventInteractions, getEventThread, getBulkProfileMetadata } from "@/lib/api";
+import { getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
 import { formatRelative } from "@/lib/utils";
 
@@ -22,22 +22,20 @@ export default async function NotePage({ params }: NotePageProps) {
     notFound();
   }
 
-  const [event, thread, interactions] = await Promise.all([
-    getEventById(id),
-    getEventThread(id),
-    getEventInteractions(id),
-  ]);
+  // Single API call — thread returns the event, interactions, replies, reactions, etc.
+  const thread = await getEventThread(id);
 
-  if (!event) {
+  if (!thread?.event) {
     notFound();
   }
 
-  const replies = thread?.replies ?? [];
-  const reactions = thread?.reactions ?? [];
-  const reactionCount = interactions?.reactions ?? thread?.interactions?.reactions ?? reactions.length;
-  const replyCount = interactions?.replies ?? thread?.interactions?.replies ?? replies.length;
-  const repostCount = interactions?.reposts ?? thread?.interactions?.reposts ?? 0;
-  const zapCount = interactions?.zaps ?? thread?.interactions?.zaps ?? 0;
+  const event = thread.event;
+  const replies = thread.replies ?? [];
+  const reactions = thread.reactions ?? [];
+  const reactionCount = thread.interactions?.reactions ?? reactions.length;
+  const replyCount = thread.interactions?.replies ?? replies.length;
+  const repostCount = thread.interactions?.reposts ?? 0;
+  const zapCount = thread.interactions?.zaps ?? 0;
 
   // Collect all pubkeys for bulk resolution
   const allPubkeys = new Set<string>();
