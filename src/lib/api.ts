@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -104,6 +104,22 @@ export async function getBulkProfileMetadata(pubkeys: string[]): Promise<Map<str
 
   return map;
 }
+
+export async function getTrendingNotes(limit = 20) {
+  return fetchFromApi<TrendingNotesResponse>(`/v1/notes/trending${buildQuery({ limit })}`, { revalidate: 15 });
+}
+
+export async function getNewUsers(limit = 20) {
+  return fetchFromApi<NewUsersResponse>(`/v1/users/new${buildQuery({ limit })}`, { revalidate: 30 });
+}
+
+export async function getTrendingUsers(limit = 20) {
+  return fetchFromApi<TrendingUsersResponse>(`/v1/users/trending${buildQuery({ limit })}`, { revalidate: 30 });
+}
+
+export const getDailyStats = cache(async () => {
+  return fetchFromApi<DailyStatsResponse>("/v1/stats/daily", { revalidate: 30 });
+});
 
 export async function getProfileMetadata(pubkey: string) {
   const query = buildQuery({ pubkey, kind: 0, limit: 1 });
