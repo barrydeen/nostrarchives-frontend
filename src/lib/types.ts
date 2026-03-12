@@ -143,6 +143,17 @@ export interface TrendingUsersResponse {
   users: TrendingUser[];
 }
 
+export interface TopZapper {
+  pubkey: string;
+  total_sats: number;
+  zap_count: number;
+}
+
+export interface TopZappersResponse {
+  direction: string;
+  zappers: TopZapper[];
+}
+
 export interface DailyStatsResponse {
   daily_active_users: number;
   total_sats_sent: number;

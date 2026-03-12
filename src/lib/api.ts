@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -131,6 +131,13 @@ export async function getTrendingNotes(limit = 20) {
 
 export async function getNewUsers(limit = 20) {
   return fetchFromApi<NewUsersResponse>(`/v1/users/new${buildQuery({ limit })}`, { revalidate: 30 });
+}
+
+export async function getTopZappers(direction: "sent" | "received" = "received", limit = 10) {
+  return fetchFromApi<TopZappersResponse>(
+    `/v1/users/zappers${buildQuery({ direction, limit })}`,
+    { revalidate: 30 },
+  );
 }
 
 export async function getTrendingUsers(limit = 20) {
