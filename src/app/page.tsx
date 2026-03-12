@@ -1,16 +1,19 @@
 import { NetworkStatsBar } from "@/components/home/NetworkStatsBar";
 import { TrendingNotes } from "@/components/home/TrendingNotes";
+import { BiggestZappers } from "@/components/home/BiggestZappers";
 import { NewUsers } from "@/components/home/NewUsers";
 import { TrendingUsers } from "@/components/home/TrendingUsers";
-import { getDailyStats, getTrendingNotes, getNewUsers, getTrendingUsers, getBulkProfileMetadata } from "@/lib/api";
+import { getDailyStats, getTrendingNotes, getNewUsers, getTrendingUsers, getTopZappers, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 
 export default async function HomePage() {
-  const [dailyStats, trendingNotes, newUsers, trendingUsers] = await Promise.all([
+  const [dailyStats, trendingNotes, newUsers, trendingUsers, zappersReceived, zappersSent] = await Promise.all([
     getDailyStats(),
     getTrendingNotes(10),
     getNewUsers(12),
     getTrendingUsers(12),
+    getTopZappers("received", 10),
+    getTopZappers("sent", 10),
   ]);
 
   // Collect all pubkeys for bulk metadata fetch
@@ -22,6 +25,8 @@ export default async function HomePage() {
   }
   newUsers?.users?.forEach((u) => allPubkeys.add(u.pubkey));
   trendingUsers?.users?.forEach((u) => allPubkeys.add(u.pubkey));
+  zappersReceived?.zappers?.forEach((z) => allPubkeys.add(z.pubkey));
+  zappersSent?.zappers?.forEach((z) => allPubkeys.add(z.pubkey));
 
   const profiles = await getBulkProfileMetadata([...allPubkeys]);
 
@@ -35,6 +40,11 @@ export default async function HomePage() {
         </div>
         {/* Right: User Discovery */}
         <div className="flex flex-col gap-8 lg:col-span-7">
+          <BiggestZappers
+            sent={zappersSent?.zappers ?? []}
+            received={zappersReceived?.zappers ?? []}
+            profiles={profiles}
+          />
           <NewUsers users={newUsers?.users ?? []} profiles={profiles} />
           <TrendingUsers users={trendingUsers?.users ?? []} profiles={profiles} />
         </div>
