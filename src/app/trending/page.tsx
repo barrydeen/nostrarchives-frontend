@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { getTopNotes } from "@/lib/api";
+import { getTopNotes, getBulkProfileMetadata } from "@/lib/api";
+import { TopNotesResponse } from "@/lib/types";
 import { NoteCard } from "@/components/cards/NoteCard";
 
 export default async function TrendingPage() {
@@ -18,6 +19,16 @@ export default async function TrendingPage() {
     { title: "Zaps · Today", data: zapsToday },
     { title: "Zaps · All time", data: zapsAll },
   ];
+
+  // Collect all pubkeys from all sections
+  const allPubkeys = new Set<string>();
+  const collectPubkeys = (data: TopNotesResponse | null | undefined) =>
+    data?.notes?.forEach((n) => allPubkeys.add(n.event.pubkey));
+  collectPubkeys(likesToday);
+  collectPubkeys(likesAll);
+  collectPubkeys(zapsToday);
+  collectPubkeys(zapsAll);
+  const profiles = await getBulkProfileMetadata([...allPubkeys]);
 
   return (
     <div className="space-y-10">
@@ -41,6 +52,7 @@ export default async function TrendingPage() {
                 <NoteCard
                   key={`${section.title}-${entry.event.id}`}
                   event={entry.event}
+                  profile={profiles.get(entry.event.pubkey)}
                   metricValue={entry.count}
                   metricLabel={section.data?.metric}
                 />

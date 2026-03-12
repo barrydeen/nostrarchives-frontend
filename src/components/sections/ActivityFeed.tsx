@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { StoredEvent } from "@/lib/types";
-import { formatRelative, truncateHex } from "@/lib/utils";
+import { StoredEvent, ProfileMetadataEntry } from "@/lib/types";
+import { formatRelative } from "@/lib/utils";
 import { Hash, ArrowRight } from "lucide-react";
+import { ProfileName } from "@/components/ProfileName";
 
 interface ActivityFeedProps {
   events?: StoredEvent[];
+  profiles?: Map<string, ProfileMetadataEntry>;
   title?: string;
 }
 
-export function ActivityFeed({ events, title = "Latest firehose" }: ActivityFeedProps) {
+export function ActivityFeed({ events, profiles, title = "Latest firehose" }: ActivityFeedProps) {
   return (
     <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
       <div className="flex items-center justify-between">
@@ -25,7 +27,7 @@ export function ActivityFeed({ events, title = "Latest firehose" }: ActivityFeed
         {events?.slice(0, 8).map((event) => (
           <article key={event.id} className="flex flex-col gap-2 rounded-2xl border border-white/5 bg-surface/80 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-xs text-white/50">{truncateHex(event.pubkey)}</div>
+              <div className="text-xs text-white/50"><ProfileName pubkey={event.pubkey} profile={profiles?.get(event.pubkey)} className="text-xs" /></div>
               <p className="text-sm text-white/80 line-clamp-2">{event.content || "(binary event)"}</p>
               {event.tags?.length ? (
                 <div className="mt-2 flex flex-wrap gap-2">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft, Filter } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import { getRecentEvents } from "@/lib/api";
+import { getRecentEvents, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
 import { NoteCard } from "@/components/cards/NoteCard";
 
@@ -23,6 +23,8 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     limit,
   });
   const events = normalizeEvents(payload);
+  const pubkeys = events.map((e) => e.pubkey);
+  const profiles = await getBulkProfileMetadata(pubkeys);
 
   return (
     <div className="space-y-10">
@@ -76,7 +78,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {events.map((event) => (
-            <NoteCard key={event.id} event={event} />
+            <NoteCard key={event.id} event={event} profile={profiles.get(event.pubkey)} />
           ))}
         </div>
       </section>
