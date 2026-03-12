@@ -161,34 +161,35 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
       {loading && !data ? (
         <SkeletonNoteGrid count={6} />
       ) : data?.notes?.length ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          {data.notes.map((entry, i) => (
-            <UnifiedNoteCard
-              key={entry.event.id}
-              event={entry.event}
-              profile={profiles.get(entry.event.pubkey)}
-              profiles={profiles}
-              rank={i + 1}
-              engagement={{
-                reactions: entry.reactions,
-                replies: entry.replies,
-                reposts: entry.reposts,
-                zap_sats: entry.zap_sats,
-              }}
-            />
-          ))}
+        <div className="relative">
+          {/* Loading overlay — fades stale content and shows skeletons */}
+          {loading && (
+            <div className="absolute inset-0 z-10 rounded-2xl bg-black/40 backdrop-blur-[1px]">
+              <SkeletonNoteGrid count={6} />
+            </div>
+          )}
+          <div className={`grid gap-4 md:grid-cols-2 transition-opacity duration-200 ${loading ? "opacity-30" : "opacity-100"}`}>
+            {data.notes.map((entry, i) => (
+              <UnifiedNoteCard
+                key={entry.event.id}
+                event={entry.event}
+                profile={profiles.get(entry.event.pubkey)}
+                profiles={profiles}
+                rank={i + 1}
+                engagement={{
+                  reactions: entry.reactions,
+                  replies: entry.replies,
+                  reposts: entry.reposts,
+                  zap_sats: entry.zap_sats,
+                }}
+              />
+            ))}
+          </div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-white/[0.06] bg-white/[0.02] py-16">
           <p className="text-lg text-white/40">No data for this combination yet.</p>
           <p className="mt-1 text-sm text-white/25">Try a wider time range or different metric.</p>
-        </div>
-      )}
-
-      {/* Loading overlay for tab switches when cached data is shown */}
-      {loading && data && (
-        <div className="fixed inset-x-0 top-0 z-50 h-0.5">
-          <div className="h-full animate-pulse bg-neon-pink/50" />
         </div>
       )}
     </div>
