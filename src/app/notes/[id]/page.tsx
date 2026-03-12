@@ -5,10 +5,11 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
-import { getNoteDetail } from "@/lib/api";
+import { InteractionTabs } from "@/components/notes/InteractionTabs";
+import { getNoteDetail, getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
 import { formatRelative } from "@/lib/utils";
-import { ProfileMetadataEntry } from "@/lib/types";
+import { ProfileMetadataEntry, StoredEvent } from "@/lib/types";
 
 interface NotePageProps {
   params: Promise<{ id: string }>;
@@ -43,8 +44,11 @@ export default async function NotePage({ params }: NotePageProps) {
     notFound();
   }
 
-  // Single API call — returns event, refs, stats, replies, and profiles in one round-trip
-  const detail = await getNoteDetail(id);
+  // Fetch note detail + thread data in parallel
+  const [detail, thread] = await Promise.all([
+    getNoteDetail(id),
+    getEventThread(id),
+  ]);
 
   if (!detail?.event) {
     notFound();
@@ -53,6 +57,74 @@ export default async function NotePage({ params }: NotePageProps) {
   const { event, stats, replies: replyEvents } = detail;
   const replies = replyEvents ?? [];
   const profiles = buildProfileMap(detail.profiles ?? {});
+
+  // Extract interaction events from thread response
+  const reactionEvents = thread?.reactions ?? [];
+  const repostEvents = thread?.reposts ?? [];
+  const zapEvents = thread?.zaps ?? [];
+
+  // Collect all unique pubkeys from interactors that we don't already have profiles for
+  const interactorPubkeys = [
+    ...reactionEvents.map((e: StoredEvent) => e.pubkey),
+    ...repostEvents.map((e: StoredEvent) => e.pubkey),
+    ...zapEvents.map((e: StoredEvent) => e.pubkey),
+  ];
+  const missingPubkeys = [...new Set(interactorPubkeys)].filter(
+    (pk) => !profiles.has(pk)
+  );
+
+  // Bulk-fetch missing profiles
+  let extraProfiles = new Map<string, ProfileMetadataEntry>();
+  if (missingPubkeys.length > 0) {
+    extraProfiles = await getBulkProfileMetadata(missingPubkeys);
+  }
+
+  // Merge all profiles into a flat record for the client component
+  const allInteractorProfiles: Record<string, {
+    pubkey: string;
+    name: string | null;
+    display_name: string | null;
+    picture: string | null;
+  }> = {};
+  for (const pk of new Set(interactorPubkeys)) {
+    const p = profiles.get(pk) ?? extraProfiles.get(pk);
+    if (p) {
+      allInteractorProfiles[pk] = {
+        pubkey: pk,
+        name: p.name ?? null,
+        display_name: p.display_name ?? null,
+        picture: p.picture ?? null,
+      };
+    }
+  }
+
+  // Parse interaction data
+  const reactions = reactionEvents.map((e: StoredEvent) => ({
+    pubkey: e.pubkey,
+    emoji: e.content === "+" || e.content === "" ? "❤️" : e.content,
+  }));
+  const reposts = repostEvents.map((e: StoredEvent) => ({ pubkey: e.pubkey }));
+  const zaps = zapEvents.map((e: StoredEvent) => {
+    // Try to parse zap amount from bolt11 in tags
+    const bolt11Tag = e.tags?.find((t) => t[0] === "bolt11");
+    let sats: number | undefined;
+    if (bolt11Tag?.[1]) {
+      // Simple extraction: look for amount in description tag instead
+      const descTag = e.tags?.find((t) => t[0] === "description");
+      if (descTag?.[1]) {
+        try {
+          const desc = JSON.parse(descTag[1]);
+          const amountTag = desc.tags?.find((t: string[]) => t[0] === "amount");
+          if (amountTag?.[1]) {
+            sats = Math.floor(Number(amountTag[1]) / 1000);
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    return { pubkey: e.pubkey, sats };
+  });
 
   return (
     <div className="space-y-10">
@@ -73,11 +145,16 @@ export default async function NotePage({ params }: NotePageProps) {
         <div className="mt-4 text-lg leading-relaxed">
           <NoteContent content={event.content || "(binary event)"} profiles={profiles} maxLines={0} />
         </div>
-        <div className="mt-6 flex flex-wrap gap-4 text-sm text-white/50">
-          <span className="inline-flex items-center gap-1.5">❤️ {stats?.reactions ?? 0} reactions</span>
+        <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/50">
           <span className="inline-flex items-center gap-1.5">💬 {stats?.replies ?? 0} replies</span>
-          <span className="inline-flex items-center gap-1.5">🔁 {stats?.reposts ?? 0} reposts</span>
-          <span className="inline-flex items-center gap-1.5">⚡ {stats?.zaps ?? 0} zaps</span>
+        </div>
+        <div className="mt-4">
+          <InteractionTabs
+            reactions={reactions}
+            reposts={reposts}
+            zaps={zaps}
+            profiles={allInteractorProfiles}
+          />
         </div>
       </section>
 
