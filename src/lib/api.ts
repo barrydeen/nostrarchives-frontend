@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -69,6 +69,11 @@ export async function getEventById(id: string) {
 
 export async function getEventThread(id: string) {
   return fetchFromApi<ThreadResponse>(`/v1/events/${id}/thread`, { revalidate: 30 });
+}
+
+/** Fetch everything the note detail page needs in a single API call. */
+export async function getNoteDetail(id: string) {
+  return fetchFromApi<NoteDetailResponse>(`/v1/pages/note/${id}`, { revalidate: 30 });
 }
 
 export async function getEventInteractions(id: string) {
