@@ -8,13 +8,14 @@ interface NoteCardProps {
   event: StoredEvent;
   profile?: ProfileMetadataEntry | null;
   metricValue?: number;
-  metricLabel?: "likes" | "zaps" | "trend";
+  metricLabel?: "likes" | "zaps" | "sats" | "trend";
   highlight?: boolean;
 }
 
 const metricIcon = {
   likes: Heart,
   zaps: Zap,
+  sats: Zap,
   trend: Flame,
 };
 
@@ -28,7 +29,7 @@ export function NoteCard({ event, profile, metricValue, metricLabel = "trend", h
         <ProfileName pubkey={event.pubkey} profile={profile} className="text-xs" />
         <span className="inline-flex items-center gap-1 rounded-full border border-white/10 px-3 py-1 text-[10px] font-semibold tracking-wide text-white/70">
           <Icon className="size-3" />
-          {metricValue ?? "metric"} {metricLabel}
+          {metricValue != null ? metricValue.toLocaleString() : "metric"} {metricLabel}
         </span>
       </div>
       <p className="mt-4 text-base text-white/90 line-clamp-3">{event.content || "—"}</p>

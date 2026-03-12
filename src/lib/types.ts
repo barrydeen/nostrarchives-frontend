@@ -34,6 +34,7 @@ export interface TopNotesResponse {
   range: "all_time" | "today";
   notes: Array<{
     count: number;
+    total_sats?: number;
     event: StoredEvent;
   }>;
 }
