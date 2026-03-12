@@ -2,6 +2,7 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { advancedNoteSearch } from "@/lib/api";
 import { ProfileMetadataEntry } from "@/lib/types";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
+import { PubkeyAutocomplete } from "@/components/search/PubkeyAutocomplete";
 
 interface ExplorePageProps {
   searchParams: Promise<{
@@ -100,27 +101,19 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="author" className="text-xs font-medium text-white/50">Posted by</label>
-            <input
-              id="author"
-              name="author"
-              placeholder="npub or hex pubkey"
-              defaultValue={params.author}
-              className="w-full rounded-2xl border border-white/10 bg-surface/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
-            />
-          </div>
+          <PubkeyAutocomplete
+            name="author"
+            id="author"
+            label="Posted by"
+            defaultValue={params.author}
+          />
 
-          <div className="space-y-1.5">
-            <label htmlFor="reply_to" className="text-xs font-medium text-white/50">Replying to</label>
-            <input
-              id="reply_to"
-              name="reply_to"
-              placeholder="npub or hex pubkey"
-              defaultValue={params.reply_to}
-              className="w-full rounded-2xl border border-white/10 bg-surface/80 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
-            />
-          </div>
+          <PubkeyAutocomplete
+            name="reply_to"
+            id="reply_to"
+            label="Replying to"
+            defaultValue={params.reply_to}
+          />
 
           <div className="space-y-1.5">
             <label htmlFor="order" className="text-xs font-medium text-white/50">Order by</label>
