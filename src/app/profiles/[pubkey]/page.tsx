@@ -106,6 +106,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <Link
                   key={follow}
                   href={`/profiles/${follow}`}
+                  prefetch={false}
                   className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
                 >
                   {truncateHex(follow)}
@@ -120,6 +121,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <Link
                   key={follower}
                   href={`/profiles/${follower}`}
+                  prefetch={false}
                   className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70"
                 >
                   {truncateHex(follower)}
