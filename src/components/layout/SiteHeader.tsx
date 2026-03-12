@@ -47,12 +47,12 @@ export function SiteHeader() {
             API
           </Link>
           <Link
-            href="https://github.com/barrydeen/nostrarchives"
+            href="https://github.com/barrydeen/nostrarchives-frontend"
             target="_blank"
             className="inline-flex items-center gap-2 rounded-full bg-white text-background px-4 py-2 text-sm font-semibold shadow-lg"
           >
             <Github className="size-4" />
-            Repo soon
+            GitHub
           </Link>
         </div>
       </div>
