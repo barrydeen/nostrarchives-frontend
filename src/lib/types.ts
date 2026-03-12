@@ -51,9 +51,14 @@ export interface SocialResponse {
 }
 
 export interface ThreadResponse {
-  root?: StoredEvent;
-  ancestors?: StoredEvent[];
-  replies?: StoredEvent[];
+  event: StoredEvent;
+  interactions: InteractionResponse;
+  root_id: string | null;
+  parent_id: string | null;
+  replies: StoredEvent[];
+  reactions: StoredEvent[];
+  reposts: StoredEvent[];
+  zaps: StoredEvent[];
 }
 
 export interface InteractionResponse {

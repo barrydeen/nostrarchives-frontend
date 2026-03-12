@@ -31,8 +31,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   const events = normalizeEvents(eventsResponse);
 
-  // Bulk-fetch profile names for follows/followers chips shown on this page
+  // Bulk-fetch profile names for follows/followers chips and the page owner
   const networkPubkeys = [
+    pubkey,
     ...(social?.follows.pubkeys.slice(0, 18) ?? []),
     ...(social?.followers.pubkeys.slice(0, 18) ?? []),
   ];
@@ -97,7 +98,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {events.map((event) => (
-            <NoteCard key={event.id} event={event} />
+            <NoteCard key={event.id} event={event} profile={networkProfiles.get(event.pubkey)} />
           ))}
         </div>
       </section>
