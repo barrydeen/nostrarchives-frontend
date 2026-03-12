@@ -21,7 +21,7 @@ export function TrendingUsers({ users, profiles }: TrendingUsersProps) {
   return (
     <section>
       <SectionHeader />
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         {users.map((user, index) => {
           const profile = profiles.get(user.pubkey);
           const name = profile?.preferred_name || truncateHex(user.pubkey);
