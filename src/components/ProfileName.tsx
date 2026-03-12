@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ProfileMetadataEntry } from "@/lib/types";
 import { truncateHex } from "@/lib/utils";
 
@@ -5,15 +6,16 @@ interface ProfileNameProps {
   pubkey: string;
   profile?: ProfileMetadataEntry | null;
   showAvatar?: boolean;
+  linked?: boolean;
   className?: string;
 }
 
-export function ProfileName({ pubkey, profile, showAvatar = true, className = "" }: ProfileNameProps) {
+export function ProfileName({ pubkey, profile, showAvatar = true, linked = true, className = "" }: ProfileNameProps) {
   const displayName = profile?.preferred_name || truncateHex(pubkey);
   const picture = profile?.picture;
 
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+  const inner = (
+    <span className={`inline-flex items-center gap-2 ${linked ? "hover:text-white transition-colors" : ""} ${className}`}>
       {showAvatar && picture ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -30,4 +32,14 @@ export function ProfileName({ pubkey, profile, showAvatar = true, className = ""
       <span className="truncate">{displayName}</span>
     </span>
   );
+
+  if (linked) {
+    return (
+      <Link href={`/profiles/${pubkey}`} prefetch={false}>
+        {inner}
+      </Link>
+    );
+  }
+
+  return inner;
 }
