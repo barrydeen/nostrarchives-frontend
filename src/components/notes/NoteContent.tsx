@@ -139,7 +139,16 @@ export function NoteContent({ content, profiles, maxLines = 0 }: NoteContentProp
   const inlineSegments = segments.filter((s) => s.type !== "image" && s.type !== "video");
   const mediaSegments = segments.filter((s) => s.type === "image" || s.type === "video");
 
-  const lineClamp = maxLines > 0 ? `line-clamp-${maxLines}` : "";
+  // Static lookup — dynamic `line-clamp-${n}` breaks Tailwind purge
+  const lineClampMap: Record<number, string> = {
+    1: "line-clamp-1",
+    2: "line-clamp-2",
+    3: "line-clamp-3",
+    4: "line-clamp-4",
+    5: "line-clamp-5",
+    6: "line-clamp-6",
+  };
+  const lineClamp = maxLines > 0 ? (lineClampMap[maxLines] ?? "line-clamp-4") : "";
 
   return (
     <div className="min-w-0 overflow-hidden">
