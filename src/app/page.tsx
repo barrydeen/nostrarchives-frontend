@@ -12,8 +12,8 @@ export default async function HomePage() {
     getTrendingNotes(10),
     getNewUsers(12),
     getTrendingUsers(12),
-    getTopZappers("received", 10),
-    getTopZappers("sent", 10),
+    getTopZappers("received", 12),
+    getTopZappers("sent", 12),
   ]);
 
   // Collect all pubkeys for bulk metadata fetch
