@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, MessageCircle, Heart, Zap, Repeat2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
+import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
 import { getEventById, getEventInteractions, getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { formatRelative } from "@/lib/utils";
@@ -29,7 +31,6 @@ export default async function NotePage({ params }: NotePageProps) {
     notFound();
   }
 
-  // Use thread data if available, fall back to standalone event + interactions
   const replies = thread?.replies ?? [];
   const reactions = thread?.reactions ?? [];
   const reactionCount = interactions?.reactions ?? thread?.interactions?.reactions ?? reactions.length;
@@ -54,30 +55,20 @@ export default async function NotePage({ params }: NotePageProps) {
       </div>
       <SiteHeader />
 
-      {/* Main note */}
+      {/* Main note — full rendering with no truncation */}
       <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
         <div className="flex flex-wrap items-center gap-3">
           <ProfileName pubkey={event.pubkey} profile={profiles.get(event.pubkey)} className="text-sm text-white/70" />
           <span className="text-xs text-white/50">{formatRelative(event.created_at)}</span>
         </div>
-        <p className="mt-4 text-2xl font-semibold text-white/90">{event.content || "(binary event)"}</p>
-        <div className="mt-6 flex flex-wrap gap-4 text-sm text-white/70">
-          <span className="inline-flex items-center gap-2">
-            <Heart className="size-4 text-neon-pink" />
-            {reactionCount} reactions
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <MessageCircle className="size-4 text-neon-blue" />
-            {replyCount} replies
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <Repeat2 className="size-4 text-white/80" />
-            {repostCount} reposts
-          </span>
-          <span className="inline-flex items-center gap-2">
-            <Zap className="size-4 text-neon-amber" />
-            {zapCount} zaps
-          </span>
+        <div className="mt-4 text-lg leading-relaxed">
+          <NoteContent content={event.content || "(binary event)"} profiles={profiles} maxLines={0} />
+        </div>
+        <div className="mt-6 flex flex-wrap gap-4 text-sm text-white/50">
+          <span className="inline-flex items-center gap-1.5">❤️ {reactionCount} reactions</span>
+          <span className="inline-flex items-center gap-1.5">💬 {replyCount} replies</span>
+          <span className="inline-flex items-center gap-1.5">🔁 {repostCount} reposts</span>
+          <span className="inline-flex items-center gap-1.5">⚡ {zapCount} zaps</span>
         </div>
       </section>
 
@@ -110,18 +101,13 @@ export default async function NotePage({ params }: NotePageProps) {
         <div className="mt-4 space-y-4">
           {replies.length > 0 ? (
             replies.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-white/10 bg-card/70 p-4">
-                <div className="flex items-center justify-between text-xs text-white/50">
-                  <ProfileName pubkey={item.pubkey} profile={profiles.get(item.pubkey)} className="text-xs" />
-                  <span>{formatRelative(item.created_at)}</span>
-                </div>
-                <p className="mt-2 text-sm text-white/80">{item.content}</p>
-                <div className="mt-2 flex justify-end">
-                  <Link href={`/notes/${item.id}`} className="text-xs text-white/50 underline-offset-2 hover:underline">
-                    Open note →
-                  </Link>
-                </div>
-              </article>
+              <UnifiedNoteCard
+                key={item.id}
+                event={item}
+                profile={profiles.get(item.pubkey)}
+                profiles={profiles}
+                variant="compact"
+              />
             ))
           ) : (
             <p className="text-sm text-white/60">No replies yet.</p>

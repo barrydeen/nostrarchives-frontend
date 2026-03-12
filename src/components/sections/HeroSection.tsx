@@ -1,21 +1,13 @@
-import { StatsResponse, StoredEvent } from "@/lib/types";
+import { StatsResponse } from "@/lib/types";
 import { StatCard } from "@/components/cards/StatCard";
 import { SearchBar } from "@/components/search/SearchBar";
 import { Activity } from "lucide-react";
-import { NoteCard } from "@/components/cards/NoteCard";
-
-interface HighlightCard {
-  event: StoredEvent;
-  metricValue?: number;
-  metricLabel?: "likes" | "zaps" | "trend";
-}
 
 interface HeroSectionProps {
   stats?: StatsResponse | null;
-  highlights: HighlightCard[];
 }
 
-export function HeroSection({ stats, highlights }: HeroSectionProps) {
+export function HeroSection({ stats }: HeroSectionProps) {
   return (
     <section className="space-y-8">
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
@@ -41,12 +33,6 @@ export function HeroSection({ stats, highlights }: HeroSectionProps) {
           <p className="mt-2 text-lg font-semibold">Reshape the feed by pubkey, hashtag, kind, or free text.</p>
           <SearchBar />
         </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {highlights.map(({ event, metricLabel, metricValue }) => (
-          <NoteCard key={event.id} event={event} metricLabel={metricLabel} metricValue={metricValue} highlight />
-        ))}
       </div>
     </section>
   );

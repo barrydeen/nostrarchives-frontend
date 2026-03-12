@@ -4,7 +4,7 @@ import { ArrowLeft, ExternalLink, Users } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getProfileMetadata, getRecentEvents, getSocialGraph, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
-import { NoteCard } from "@/components/cards/NoteCard";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { ProfileName } from "@/components/ProfileName";
 import { formatNumber, truncateHex } from "@/lib/utils";
 
@@ -101,7 +101,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {events.map((event) => (
-            <NoteCard key={event.id} event={event} profile={networkProfiles.get(event.pubkey)} />
+            <UnifiedNoteCard key={event.id} event={event} profile={networkProfiles.get(event.pubkey)} profiles={networkProfiles} />
           ))}
         </div>
       </section>
