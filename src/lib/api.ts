@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -44,6 +44,20 @@ export const getGlobalStats = cache(async () => {
 export async function getTopNotes(metric: "likes" | "zaps", range: "all_time" | "today", limit = 6) {
   const path = `/v1/notes/${metric}/top${range === "today" ? "/today" : ""}${buildQuery({ limit })}`;
   return fetchFromApi<TopNotesResponse>(path, { revalidate: range === "today" ? 15 : 120 });
+}
+
+/** Unified trending endpoint: metric × range with profiles included. */
+export async function getTopNotesUnified(
+  metric: TrendingMetric = "reactions",
+  range: TrendingRange = "today",
+  limit = 20,
+  offset = 0,
+) {
+  const revalidate = range === "today" ? 15 : range === "7d" ? 30 : 120;
+  return fetchFromApi<TopNotesUnifiedResponse>(
+    `/v1/notes/top${buildQuery({ metric, range, limit, offset })}`,
+    { revalidate },
+  );
 }
 
 export async function getRecentEvents(params?: {

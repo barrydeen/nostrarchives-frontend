@@ -149,6 +149,31 @@ export interface DailyStatsResponse {
   daily_posts: number;
 }
 
+// ─── Unified Trending ───────────────────────────────────────────────
+
+export type TrendingMetric = "reactions" | "replies" | "reposts" | "zaps";
+export type TrendingRange = "today" | "7d" | "30d" | "1y" | "all";
+
+export interface TopNotesUnifiedResponse {
+  metric: string;
+  range: string;
+  notes: Array<{
+    count: number;
+    total_sats?: number;
+    reactions: number;
+    replies: number;
+    reposts: number;
+    zap_sats: number;
+    event: StoredEvent;
+  }>;
+  profiles: Record<string, {
+    name: string | null;
+    display_name: string | null;
+    picture: string | null;
+    nip05: string | null;
+  }>;
+}
+
 // ─── Search ─────────────────────────────────────────────────────────
 
 export interface ProfileSearchResult {
