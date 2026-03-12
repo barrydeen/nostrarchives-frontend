@@ -1,6 +1,4 @@
-import Link from "next/link";
-import { ArrowLeft, Filter } from "lucide-react";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { Filter } from "lucide-react";
 import { getRecentEvents, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
@@ -31,14 +29,6 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
 
   return (
     <div className="space-y-10">
-      <div className="flex items-center gap-3 text-sm text-white/60">
-        <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2">
-          <ArrowLeft className="size-4" />
-          Back home
-        </Link>
-      </div>
-      <SiteHeader />
-
       <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
         <div className="flex flex-col gap-3 border-b border-white/5 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>

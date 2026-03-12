@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import { TopLoader } from "@/components/layout/TopLoader";
+import { SiteHeader } from "@/components/layout/SiteHeader";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -59,10 +60,11 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <TopLoader />
         </Suspense>
+        <SiteHeader />
         <div className="relative isolate overflow-hidden">
           <div className="grid-overlay pointer-events-none absolute inset-0 opacity-60" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(249,119,206,0.18),transparent_55%)]" />
-          <main className="relative z-10 min-h-screen px-4 pb-16 pt-8 sm:px-8 lg:px-16">
+          <main className="relative z-10 min-h-screen px-4 pb-16 pt-6 sm:px-8 lg:px-16">
             {children}
           </main>
         </div>

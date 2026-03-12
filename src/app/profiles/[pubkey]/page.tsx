@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Users } from "lucide-react";
-import { SiteHeader } from "@/components/layout/SiteHeader";
+import { ExternalLink, Users } from "lucide-react";
 import { getProfileMetadata, getRecentEvents, getSocialGraph, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
@@ -54,14 +53,6 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
   return (
     <div className="space-y-10">
-      <div className="flex items-center gap-3 text-sm text-white/60">
-        <Link href="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2">
-          <ArrowLeft className="size-4" />
-          Back home
-        </Link>
-      </div>
-      <SiteHeader />
-
       <section className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           <div
