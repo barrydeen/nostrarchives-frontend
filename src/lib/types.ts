@@ -11,6 +11,11 @@ export interface StoredEvent {
   relay_url?: string;
   received_at?: string;
   raw?: Record<string, unknown>;
+  /** Engagement stats — present when returned by enriched endpoints */
+  reactions?: number;
+  replies?: number;
+  reposts?: number;
+  zap_sats?: number;
 }
 
 export interface StatsResponse {
@@ -35,6 +40,10 @@ export interface TopNotesResponse {
   notes: Array<{
     count: number;
     total_sats?: number;
+    reactions: number;
+    replies: number;
+    reposts: number;
+    zap_sats: number;
     event: StoredEvent;
   }>;
 }
