@@ -14,20 +14,18 @@ const items = [
 
 export function NetworkStatsBar({ stats }: NetworkStatsBarProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid grid-cols-3 gap-2 sm:gap-4">
       {items.map(({ key, label, icon: Icon, color }) => (
         <div
           key={key}
-          className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-surface/80 p-5 backdrop-blur-xl transition hover:border-white/15"
+          className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.06] bg-surface/80 px-3 py-3 sm:p-5 backdrop-blur-xl transition hover:border-white/15"
         >
           <div className="pointer-events-none absolute -right-4 -top-4 size-24 rounded-full bg-gradient-to-br from-white/[0.03] to-transparent" />
-          <div className="flex items-center gap-3">
-            <div className={`rounded-xl bg-white/[0.06] p-2.5 ${color}`}>
-              <Icon className="size-4" />
-            </div>
-            <span className="text-xs font-medium uppercase tracking-[0.15em] text-white/50">{label}</span>
+          <div className={`rounded-lg bg-white/[0.06] p-1.5 sm:p-2.5 ${color} mb-1.5 sm:mb-0 w-fit`}>
+            <Icon className="size-3.5 sm:size-4" />
           </div>
-          <p className="mt-3 text-3xl font-bold tracking-tight">
+          <span className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.1em] sm:tracking-[0.15em] text-white/50 mt-1.5">{label}</span>
+          <p className="mt-1 text-lg sm:text-3xl font-bold tracking-tight">
             {stats ? formatNumber(stats[key]) : "—"}
           </p>
         </div>
