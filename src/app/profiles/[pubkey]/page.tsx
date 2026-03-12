@@ -30,6 +30,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   ]);
 
   const events = normalizeEvents(eventsResponse);
+  const totalNotes = (eventsResponse && !Array.isArray(eventsResponse) && "total" in eventsResponse)
+    ? (eventsResponse as { total?: number }).total ?? events.length
+    : events.length;
 
   // Bulk-fetch profile names for follows/followers chips and the page owner
   const networkPubkeys = [
@@ -84,7 +87,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </div>
               <div className="rounded-2xl border border-white/10 bg-surface/80 p-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-white/50">Notes indexed</p>
-                <p className="text-2xl font-semibold">{events.length}</p>
+                <p className="text-2xl font-semibold">{formatNumber(totalNotes)}</p>
               </div>
             </div>
           </div>
