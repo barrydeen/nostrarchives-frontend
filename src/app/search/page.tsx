@@ -5,6 +5,7 @@ import { search } from "@/lib/api";
 import { truncateHex, formatNumber, formatRelative } from "@/lib/utils";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SearchBar } from "@/components/search/SearchBar";
+import { SafeAvatar } from "@/components/search/SafeAvatar";
 import type { ProfileSearchResult, NoteSearchResult } from "@/lib/types";
 
 interface Props {
@@ -124,20 +125,7 @@ function ProfileCard({ profile }: { profile: ProfileSearchResult }) {
       href={`/profiles/${profile.pubkey}`}
       className="group flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-white/15 hover:bg-white/[0.04]"
     >
-      {profile.picture ? (
-        <img
-          src={profile.picture}
-          alt=""
-          className="size-12 shrink-0 rounded-full bg-white/10 object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).style.display = "none";
-          }}
-        />
-      ) : (
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10">
-          <User2 className="size-5 text-white/40" />
-        </div>
-      )}
+      <SafeAvatar src={profile.picture} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-white group-hover:text-white/90">
           {name}
