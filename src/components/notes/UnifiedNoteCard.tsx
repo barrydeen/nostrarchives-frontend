@@ -60,6 +60,7 @@ function CardLink({ eventId }: { eventId: string }) {
   return (
     <Link
       href={`/notes/${eventId}`}
+      prefetch={false}
       className="absolute inset-0 z-0"
       aria-label="View note"
     />

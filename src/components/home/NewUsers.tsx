@@ -31,6 +31,7 @@ export function NewUsers({ users, profiles }: NewUsersProps) {
             <Link
               key={user.pubkey}
               href={`/profiles/${user.pubkey}`}
+              prefetch={false}
               className="group flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition hover:border-white/15 hover:bg-card/80"
             >
               {picture ? (

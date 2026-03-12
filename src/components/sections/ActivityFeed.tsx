@@ -42,7 +42,7 @@ export function ActivityFeed({ events, profiles, title = "Latest firehose" }: Ac
             </div>
             <div className="flex flex-col items-start gap-2 text-xs text-white/50 sm:items-end">
               <span>{formatRelative(event.created_at)}</span>
-              <Link href={`/notes/${event.id}`} className="text-[11px] underline-offset-2 hover:underline">
+              <Link href={`/notes/${event.id}`} prefetch={false} className="text-[11px] underline-offset-2 hover:underline">
                 Inspect note
               </Link>
             </div>
