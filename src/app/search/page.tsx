@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Search, User2, MessageSquare, Zap, Heart, Repeat2, Reply } from "lucide-react";
-import { search } from "@/lib/api";
-import { truncateHex, formatNumber, formatRelative } from "@/lib/utils";
+import { Search, User2, MessageSquare } from "lucide-react";
+import { search, getBulkProfileMetadata } from "@/lib/api";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
+import { truncateHex, formatNumber } from "@/lib/utils";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SafeAvatar } from "@/components/search/SafeAvatar";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import type { ProfileSearchResult, NoteSearchResult } from "@/lib/types";
 
 interface Props {
@@ -25,6 +27,13 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const profiles = results?.profiles ?? [];
   const notes = results?.notes ?? [];
+
+  // Resolve note authors + mentioned pubkeys for @DisplayName rendering
+  const noteEvents = notes.map((n) => n.event);
+  const pubkeys = new Set<string>();
+  noteEvents.forEach((e) => pubkeys.add(e.pubkey));
+  extractMentionPubkeysFromEvents(noteEvents).forEach((pk) => pubkeys.add(pk));
+  const noteProfiles = await getBulkProfileMetadata([...pubkeys]);
 
   // If entity was resolved, redirect directly
   if (results?.resolved) {
@@ -96,7 +105,19 @@ export default async function SearchPage({ searchParams }: Props) {
             )}
             <div className="space-y-3">
               {notes.map((note) => (
-                <NoteResult key={note.event.id} note={note} />
+                <UnifiedNoteCard
+                  key={note.event.id}
+                  event={note.event}
+                  profile={noteProfiles.get(note.event.pubkey)}
+                  profiles={noteProfiles}
+                  engagement={{
+                    reactions: note.reactions,
+                    replies: note.replies,
+                    reposts: note.reposts,
+                    zap_sats: note.zaps,
+                  }}
+                  variant="compact"
+                />
               ))}
             </div>
           </section>
@@ -147,44 +168,4 @@ function ProfileCard({ profile }: { profile: ProfileSearchResult }) {
   );
 }
 
-function NoteResult({ note }: { note: NoteSearchResult }) {
-  const content = note.event.content.length > 280
-    ? note.event.content.slice(0, 280) + "…"
-    : note.event.content;
 
-  return (
-    <Link
-      href={`/notes/${note.event.id}`}
-      className="group block rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-white/15 hover:bg-white/[0.04]"
-    >
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs text-white/40">
-          {truncateHex(note.event.pubkey)} · {formatRelative(note.event.created_at)}
-        </span>
-      </div>
-      <p className="text-sm leading-relaxed text-white/80">{content}</p>
-      <div className="mt-3 flex items-center gap-4 text-xs text-white/40">
-        {note.reactions > 0 && (
-          <span className="flex items-center gap-1">
-            <Heart className="size-3" /> {formatNumber(note.reactions)}
-          </span>
-        )}
-        {note.replies > 0 && (
-          <span className="flex items-center gap-1">
-            <Reply className="size-3" /> {formatNumber(note.replies)}
-          </span>
-        )}
-        {note.reposts > 0 && (
-          <span className="flex items-center gap-1">
-            <Repeat2 className="size-3" /> {formatNumber(note.reposts)}
-          </span>
-        )}
-        {note.zaps > 0 && (
-          <span className="flex items-center gap-1">
-            <Zap className="size-3" /> {formatNumber(note.zaps)}
-          </span>
-        )}
-      </div>
-    </Link>
-  );
-}

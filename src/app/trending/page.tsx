@@ -3,7 +3,8 @@ import { ArrowLeft } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getTopNotes, getBulkProfileMetadata } from "@/lib/api";
 import { TopNotesResponse } from "@/lib/types";
-import { NoteCard } from "@/components/cards/NoteCard";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 
 export default async function TrendingPage() {
   const [likesToday, likesAll, zapsToday, zapsAll] = await Promise.all([
@@ -22,8 +23,11 @@ export default async function TrendingPage() {
 
   // Collect all pubkeys from all sections
   const allPubkeys = new Set<string>();
-  const collectPubkeys = (data: TopNotesResponse | null | undefined) =>
-    data?.notes?.forEach((n) => allPubkeys.add(n.event.pubkey));
+  const collectPubkeys = (data: TopNotesResponse | null | undefined) => {
+    const events = data?.notes?.map((n) => n.event) ?? [];
+    events.forEach((e) => allPubkeys.add(e.pubkey));
+    extractMentionPubkeysFromEvents(events).forEach((pk) => allPubkeys.add(pk));
+  };
   collectPubkeys(likesToday);
   collectPubkeys(likesAll);
   collectPubkeys(zapsToday);
@@ -49,12 +53,15 @@ export default async function TrendingPage() {
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {section.data?.notes?.map((entry) => (
-                <NoteCard
+                <UnifiedNoteCard
                   key={`${section.title}-${entry.event.id}`}
                   event={entry.event}
                   profile={profiles.get(entry.event.pubkey)}
-                  metricValue={section.data?.metric === "zaps" ? (entry.total_sats ?? entry.count) : entry.count}
-                  metricLabel={section.data?.metric === "zaps" ? "sats" : section.data?.metric}
+                  profiles={profiles}
+                  engagement={{
+                    reactions: section.data?.metric === "likes" ? entry.count : undefined,
+                    zap_sats: section.data?.metric === "zaps" ? (entry.total_sats ?? entry.count) : undefined,
+                  }}
                 />
               )) || <p className="text-white/60">No data right now.</p>}
             </div>

@@ -1,5 +1,5 @@
 import { TopNotesResponse, ProfileMetadataEntry } from "@/lib/types";
-import { NoteCard } from "@/components/cards/NoteCard";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 
 interface TrendingSectionProps {
   likes?: TopNotesResponse | null;
@@ -33,12 +33,16 @@ export function TrendingSection({ likes, zaps, profiles }: TrendingSectionProps)
             </div>
             <div className="grid gap-4">
               {dataset?.notes?.slice(0, 4).map((entry) => (
-                <NoteCard
+                <UnifiedNoteCard
                   key={entry.event.id}
                   event={entry.event}
                   profile={profiles?.get(entry.event.pubkey)}
-                  metricValue={dataset.metric === "zaps" ? (entry.total_sats ?? entry.count) : entry.count}
-                  metricLabel={dataset.metric === "zaps" ? "sats" : dataset.metric}
+                  profiles={profiles}
+                  engagement={{
+                    reactions: dataset.metric === "likes" ? entry.count : undefined,
+                    zap_sats: dataset.metric === "zaps" ? (entry.total_sats ?? entry.count) : undefined,
+                  }}
+                  variant="compact"
                 />
               )) || <p className="text-white/50">No data yet.</p>}
             </div>

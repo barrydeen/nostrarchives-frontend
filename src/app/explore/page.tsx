@@ -3,7 +3,8 @@ import { ArrowLeft, Filter } from "lucide-react";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { getRecentEvents, getBulkProfileMetadata } from "@/lib/api";
 import { normalizeEvents } from "@/lib/normalizers";
-import { NoteCard } from "@/components/cards/NoteCard";
+import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
+import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 
 interface ExplorePageProps {
   searchParams: Promise<{
@@ -23,8 +24,10 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
     limit,
   });
   const events = normalizeEvents(payload);
-  const pubkeys = events.map((e) => e.pubkey);
-  const profiles = await getBulkProfileMetadata(pubkeys);
+  const pubkeys = new Set<string>();
+  events.forEach((e) => pubkeys.add(e.pubkey));
+  extractMentionPubkeysFromEvents(events).forEach((pk) => pubkeys.add(pk));
+  const profiles = await getBulkProfileMetadata([...pubkeys]);
 
   return (
     <div className="space-y-10">
@@ -78,7 +81,7 @@ export default async function ExplorePage({ searchParams }: ExplorePageProps) {
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           {events.map((event) => (
-            <NoteCard key={event.id} event={event} profile={profiles.get(event.pubkey)} />
+            <UnifiedNoteCard key={event.id} event={event} profile={profiles.get(event.pubkey)} profiles={profiles} />
           ))}
         </div>
       </section>

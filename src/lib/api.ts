@@ -84,7 +84,8 @@ export async function getBulkProfileMetadata(pubkeys: string[]): Promise<Map<str
   const map = new Map<string, ProfileMetadataEntry>();
   if (!pubkeys.length) return map;
 
-  const unique = [...new Set(pubkeys)];
+  const unique = [...new Set(pubkeys)].slice(0, 500);
+  if (!unique.length) return map;
   const url = `${API_BASE_URL}/v1/profiles/metadata`;
 
   try {
