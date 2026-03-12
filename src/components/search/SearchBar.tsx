@@ -25,7 +25,15 @@ function getCached(key: string): SuggestResponse | null {
   return entry.data;
 }
 
-export function SearchBar({ compact = false }: { compact?: boolean }) {
+export function SearchBar({
+  compact = false,
+  autoFocus = false,
+  onNavigate,
+}: {
+  compact?: boolean;
+  autoFocus?: boolean;
+  onNavigate?: () => void;
+}) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<ProfileSearchResult[]>([]);
@@ -123,9 +131,10 @@ export function SearchBar({ compact = false }: { compact?: boolean }) {
       setIsOpen(false);
       setQuery("");
       setSuggestions([]);
+      onNavigate?.();
       router.push(path);
     },
-    [router],
+    [router, onNavigate],
   );
 
   const handleSubmit = useCallback(() => {
@@ -179,6 +188,7 @@ export function SearchBar({ compact = false }: { compact?: boolean }) {
         <Search className="size-4 shrink-0 text-white/50" />
         <input
           ref={inputRef}
+          autoFocus={autoFocus}
           className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/40 focus:outline-none"
           placeholder="Search profiles, notes, or paste npub / nevent..."
           value={query}
