@@ -78,6 +78,27 @@ export interface InteractionResponse {
   zaps?: number;
 }
 
+/** Response from GET /v1/pages/note/{id} — single-query note detail. */
+export interface NoteDetailResponse {
+  event: StoredEvent;
+  root_id: string | null;
+  parent_id: string | null;
+  stats: {
+    replies: number;
+    reactions: number;
+    reposts: number;
+    zaps: number;
+  };
+  replies: StoredEvent[];
+  /** Map of pubkey → profile metadata for all involved pubkeys. */
+  profiles: Record<string, {
+    name: string | null;
+    display_name: string | null;
+    picture: string | null;
+    nip05: string | null;
+  }>;
+}
+
 export interface ProfileMetadataEntry {
   pubkey: string;
   display_name: string | null;
