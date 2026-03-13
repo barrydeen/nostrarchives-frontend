@@ -40,7 +40,6 @@ export function buildReplyTree(
   rootEventId: string
 ): ReplyNode[] {
   const replyIds = new Set(replies.map((r) => r.id));
-  const childrenMap = new Map<string, ReplyNode[]>();
 
   // Initialize nodes
   const nodeMap = new Map<string, ReplyNode>();
