@@ -124,6 +124,17 @@ export interface TrendingNotesResponse {
   notes: TrendingNote[];
 }
 
+export interface HashtagNotesResponse {
+  hashtag: string;
+  notes: TrendingNote[];
+  profiles: Record<string, {
+    name: string | null;
+    display_name: string | null;
+    picture: string | null;
+    nip05: string | null;
+  }>;
+}
+
 export interface NewUser {
   pubkey: string;
   first_seen: number;
