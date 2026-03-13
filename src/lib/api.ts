@@ -43,7 +43,7 @@ export const getGlobalStats = cache(async () => {
 
 export async function getTopNotes(metric: "likes" | "zaps", range: "all_time" | "today", limit = 6) {
   const path = `/v1/notes/${metric}/top${range === "today" ? "/today" : ""}${buildQuery({ limit })}`;
-  const revalidate = range === "today" ? 300 : 21600;
+  const revalidate = range === "today" ? 1800 : 604800;
   return fetchFromApi<TopNotesResponse>(path, { revalidate });
 }
 
@@ -56,10 +56,10 @@ export async function getTopNotesUnified(
 ) {
   // Aggressive caching — these feeds don't need to be real-time
   const revalidate =
-    range === "today" ? 300       // 5 min
-    : range === "7d"  ? 900       // 15 min
-    : range === "30d" ? 3600      // 1 hour
-    :                   21600;    // 6 hours (1y, all)
+    range === "today" ? 1800      // 30 min
+    : range === "7d"  ? 10800     // 3 hours
+    : range === "30d" ? 86400     // 1 day
+    :                   604800;   // 1 week (1y, all)
   return fetchFromApi<TopNotesUnifiedResponse>(
     `/v1/notes/top${buildQuery({ metric, range, limit, offset })}`,
     { revalidate },
