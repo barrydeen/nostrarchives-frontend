@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -207,4 +207,11 @@ export async function getProfileMetadata(pubkey: string) {
     console.warn(`[nostrarchives] Failed to parse profile metadata for ${pubkey}`, error);
     return { metadata: null, event: latest };
   }
+}
+
+export async function getTrendingHashtags(limit = 20) {
+  return fetchFromApi<TrendingHashtagsResponse>(
+    `/v1/hashtags/trending${buildQuery({ limit })}`,
+    { revalidate: 600 },
+  );
 }

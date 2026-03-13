@@ -251,3 +251,14 @@ export interface SuggestResponse {
   resolved?: ResolvedEntity;
   suggestions: ProfileSearchResult[];
 }
+
+// ─── Trending Hashtags ──────────────────────────────────────────────
+
+export interface TrendingHashtag {
+  hashtag: string;
+  count: number;
+}
+
+export interface TrendingHashtagsResponse {
+  hashtags: TrendingHashtag[];
+}

@@ -3,17 +3,19 @@ import { TrendingNotes } from "@/components/home/TrendingNotes";
 import { BiggestZappers } from "@/components/home/BiggestZappers";
 import { NewUsers } from "@/components/home/NewUsers";
 import { TrendingUsers } from "@/components/home/TrendingUsers";
-import { getDailyStats, getTrendingNotes, getNewUsers, getTrendingUsers, getTopZappers, getBulkProfileMetadata } from "@/lib/api";
+import { TrendingHashtags } from "@/components/home/TrendingHashtags";
+import { getDailyStats, getTrendingNotes, getNewUsers, getTrendingUsers, getTopZappers, getTrendingHashtags, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 
 export default async function HomePage() {
-  const [dailyStats, trendingNotes, newUsers, trendingUsers, zappersReceived, zappersSent] = await Promise.all([
+  const [dailyStats, trendingNotes, newUsers, trendingUsers, zappersReceived, zappersSent, trendingHashtags] = await Promise.all([
     getDailyStats(),
     getTrendingNotes(10),
     getNewUsers(12),
     getTrendingUsers(12),
     getTopZappers("received", 12),
     getTopZappers("sent", 12),
+    getTrendingHashtags(20),
   ]);
 
   // Collect all pubkeys for bulk metadata fetch
@@ -45,6 +47,7 @@ export default async function HomePage() {
             received={zappersReceived?.zappers ?? []}
             profiles={profiles}
           />
+          <TrendingHashtags hashtags={trendingHashtags?.hashtags ?? []} />
           <NewUsers users={newUsers?.users ?? []} profiles={profiles} />
           <TrendingUsers users={trendingUsers?.users ?? []} profiles={profiles} />
         </div>
