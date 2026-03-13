@@ -55,21 +55,27 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
   const [data, setData] = useState<TopNotesUnifiedResponse | null>(initialData);
   const [loading, setLoading] = useState(false);
 
-  // Cache for previously fetched data
-  const cache = useRef<Map<string, TopNotesUnifiedResponse>>(new Map());
+  // Cache with TTL — longer ranges cached longer (matches server ISR)
+  const cache = useRef<Map<string, { data: TopNotesUnifiedResponse; ts: number }>>(new Map());
+
+  const ttlFor = (r: TrendingRange): number =>
+    r === "today" ? 5 * 60_000      // 5 min
+    : r === "7d"  ? 15 * 60_000     // 15 min
+    : r === "30d" ? 60 * 60_000     // 1 hour
+    :               6 * 3600_000;   // 6 hours (1y, all)
 
   // Seed cache with initial data
   useEffect(() => {
     if (initialData) {
-      cache.current.set(`${initialMetric}:${initialRange}`, initialData);
+      cache.current.set(`${initialMetric}:${initialRange}`, { data: initialData, ts: Date.now() });
     }
   }, [initialData, initialMetric, initialRange]);
 
   const fetchData = useCallback(async (m: TrendingMetric, r: TrendingRange) => {
     const cacheKey = `${m}:${r}`;
-    const cached = cache.current.get(cacheKey);
-    if (cached) {
-      setData(cached);
+    const entry = cache.current.get(cacheKey);
+    if (entry && Date.now() - entry.ts < ttlFor(r)) {
+      setData(entry.data);
       setLoading(false);
       return;
     }
@@ -82,7 +88,7 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
       );
       if (!res.ok) throw new Error(`${res.status}`);
       const json: TopNotesUnifiedResponse = await res.json();
-      cache.current.set(cacheKey, json);
+      cache.current.set(cacheKey, { data: json, ts: Date.now() });
       setData(json);
     } catch (err) {
       console.error("[trending] fetch failed", err);
@@ -96,11 +102,11 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
     setMetric(m);
     setRange(r);
 
-    // If cached, set immediately (no loading flash)
+    // If cached and fresh, set immediately (no loading flash)
     const cacheKey = `${m}:${r}`;
-    const cached = cache.current.get(cacheKey);
-    if (cached) {
-      setData(cached);
+    const entry = cache.current.get(cacheKey);
+    if (entry && Date.now() - entry.ts < ttlFor(r)) {
+      setData(entry.data);
     }
 
     // Update URL
