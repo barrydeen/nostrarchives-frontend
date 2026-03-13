@@ -59,10 +59,10 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
   const cache = useRef<Map<string, { data: TopNotesUnifiedResponse; ts: number }>>(new Map());
 
   const ttlFor = (r: TrendingRange): number =>
-    r === "today" ? 5 * 60_000      // 5 min
-    : r === "7d"  ? 15 * 60_000     // 15 min
-    : r === "30d" ? 60 * 60_000     // 1 hour
-    :               6 * 3600_000;   // 6 hours (1y, all)
+    r === "today" ? 30 * 60_000     // 30 min
+    : r === "7d"  ? 3 * 3600_000    // 3 hours
+    : r === "30d" ? 86400_000       // 1 day
+    :               604800_000;     // 1 week (1y, all)
 
   // Seed cache with initial data
   useEffect(() => {
