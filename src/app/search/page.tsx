@@ -7,7 +7,16 @@ import { truncateHex, formatNumber } from "@/lib/utils";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SafeAvatar } from "@/components/search/SafeAvatar";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
-import type { ProfileSearchResult, ProfileMetadataEntry } from "@/lib/types";
+import type { ProfileSearchResult, ProfileMetadataEntry, StoredEvent } from "@/lib/types";
+
+/** Unified shape for rendering note cards from either search or hashtag results. */
+interface RenderNote {
+  event: StoredEvent;
+  reactions: number;
+  replies: number;
+  reposts: number;
+  zap_sats: number;
+}
 
 interface Props {
   searchParams: Promise<{ q?: string; type?: string }>;
@@ -24,21 +33,28 @@ export default async function SearchPage({ searchParams }: Props) {
   }
 
   const results = isHashtag ? null : await search(query, searchType, 30);
-
   const profiles = results?.profiles ?? [];
-  const notes = results?.notes ?? [];
 
-  // Hashtag search: use tag-based endpoint to match trending hashtags
-  let hashtagNotes = notes;
-  let hashtagProfiles = new Map<string, ProfileMetadataEntry>();
+  // Hashtag search: use tag-based endpoint; regular search: use FTS
+  let notesToRender: RenderNote[] = [];
+  let noteProfiles = new Map<string, ProfileMetadataEntry>();
 
   if (isHashtag) {
     const hashtagResponse = await getHashtagNotes(query, 30, 0);
-    hashtagNotes = hashtagResponse?.notes ?? [];
+    const hashtagNotes = hashtagResponse?.notes ?? [];
 
+    notesToRender = hashtagNotes.map((n) => ({
+      event: n.event,
+      reactions: n.reactions,
+      replies: n.replies,
+      reposts: n.reposts,
+      zap_sats: n.zap_sats,
+    }));
+
+    // Build profile map from API response
     if (hashtagResponse?.profiles) {
       Object.entries(hashtagResponse.profiles).forEach(([pubkey, profile]) => {
-        hashtagProfiles.set(pubkey, {
+        noteProfiles.set(pubkey, {
           pubkey,
           preferred_name: null,
           name: profile.name ?? null,
@@ -47,32 +63,42 @@ export default async function SearchPage({ searchParams }: Props) {
         });
       });
     }
-  }
 
-  // Resolve note authors + mentioned pubkeys for @DisplayName rendering
-  const noteEvents = (isHashtag ? hashtagNotes : notes).map((n) => n.event);
-  const pubkeys = new Set<string>();
-  noteEvents.forEach((e) => pubkeys.add(e.pubkey));
-  extractMentionPubkeysFromEvents(noteEvents).forEach((pk) => pubkeys.add(pk));
-  const noteProfiles = isHashtag ? hashtagProfiles : await getBulkProfileMetadata([...pubkeys]);
-
-  if (isHashtag) {
+    // Also resolve mentioned pubkeys for @DisplayName rendering
+    const pubkeys = new Set<string>();
+    hashtagNotes.forEach((n) => pubkeys.add(n.event.pubkey));
+    extractMentionPubkeysFromEvents(hashtagNotes.map((n) => n.event)).forEach((pk) => pubkeys.add(pk));
     const mentionProfiles = await getBulkProfileMetadata([...pubkeys]);
     mentionProfiles.forEach((val, key) => noteProfiles.set(key, val));
+  } else {
+    const notes = results?.notes ?? [];
+
+    notesToRender = notes.map((n) => ({
+      event: n.event,
+      reactions: n.reactions,
+      replies: n.replies,
+      reposts: n.reposts,
+      zap_sats: n.zaps,
+    }));
+
+    // Resolve note authors + mentioned pubkeys
+    const pubkeys = new Set<string>();
+    notes.forEach((n) => pubkeys.add(n.event.pubkey));
+    extractMentionPubkeysFromEvents(notes.map((n) => n.event)).forEach((pk) => pubkeys.add(pk));
+    noteProfiles = await getBulkProfileMetadata([...pubkeys]);
+
+    // If entity was resolved, redirect directly
+    if (results?.resolved) {
+      const r = results.resolved;
+      if (r.type === "profile" && r.pubkey) {
+        redirect(`/profiles/${r.pubkey}`);
+      }
+      if (r.type === "event" && r.id) {
+        redirect(`/notes/${r.id}`);
+      }
+    }
   }
 
-  // If entity was resolved, redirect directly
-  if (results?.resolved) {
-    const r = results.resolved;
-    if (r.type === "profile" && r.pubkey) {
-      redirect(`/profiles/${r.pubkey}`);
-    }
-    if (r.type === "event" && r.id) {
-      redirect(`/notes/${r.id}`);
-    }
-  }
-
-  const notesToRender = isHashtag ? hashtagNotes : notes;
   const resultCount = isHashtag ? notesToRender.length : profiles.length + notesToRender.length;
   const emptyState = isHashtag ? notesToRender.length === 0 : profiles.length === 0 && notesToRender.length === 0;
 
@@ -142,7 +168,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     reactions: note.reactions,
                     replies: note.replies,
                     reposts: note.reposts,
-                    zap_sats: "zap_sats" in note ? note.zap_sats : note.zaps,
+                    zap_sats: note.zap_sats,
                   }}
                   variant="compact"
                 />
