@@ -1,13 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Search, User2, MessageSquare } from "lucide-react";
-import { search, getBulkProfileMetadata } from "@/lib/api";
+import { search, getBulkProfileMetadata, getHashtagNotes } from "@/lib/api";
 import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
 import { truncateHex, formatNumber } from "@/lib/utils";
 import { SearchBar } from "@/components/search/SearchBar";
 import { SafeAvatar } from "@/components/search/SafeAvatar";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
-import type { ProfileSearchResult, NoteSearchResult } from "@/lib/types";
+import type { ProfileSearchResult, ProfileMetadataEntry } from "@/lib/types";
 
 interface Props {
   searchParams: Promise<{ q?: string; type?: string }>;
@@ -16,23 +16,50 @@ interface Props {
 export default async function SearchPage({ searchParams }: Props) {
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
-  const searchType = (params.type as "all" | "profiles" | "notes") || "all";
+  const isHashtag = query.startsWith("#");
+  const searchType = (params.type as "all" | "profiles" | "notes") || (isHashtag ? "notes" : "all");
 
   if (!query) {
     redirect("/");
   }
 
-  const results = await search(query, searchType, 30);
+  const results = isHashtag ? null : await search(query, searchType, 30);
 
   const profiles = results?.profiles ?? [];
   const notes = results?.notes ?? [];
 
+  // Hashtag search: use tag-based endpoint to match trending hashtags
+  let hashtagNotes = notes;
+  let hashtagProfiles = new Map<string, ProfileMetadataEntry>();
+
+  if (isHashtag) {
+    const hashtagResponse = await getHashtagNotes(query, 30, 0);
+    hashtagNotes = hashtagResponse?.notes ?? [];
+
+    if (hashtagResponse?.profiles) {
+      Object.entries(hashtagResponse.profiles).forEach(([pubkey, profile]) => {
+        hashtagProfiles.set(pubkey, {
+          pubkey,
+          preferred_name: null,
+          name: profile.name ?? null,
+          display_name: profile.display_name ?? null,
+          picture: profile.picture ?? null,
+        });
+      });
+    }
+  }
+
   // Resolve note authors + mentioned pubkeys for @DisplayName rendering
-  const noteEvents = notes.map((n) => n.event);
+  const noteEvents = (isHashtag ? hashtagNotes : notes).map((n) => n.event);
   const pubkeys = new Set<string>();
   noteEvents.forEach((e) => pubkeys.add(e.pubkey));
   extractMentionPubkeysFromEvents(noteEvents).forEach((pk) => pubkeys.add(pk));
-  const noteProfiles = await getBulkProfileMetadata([...pubkeys]);
+  const noteProfiles = isHashtag ? hashtagProfiles : await getBulkProfileMetadata([...pubkeys]);
+
+  if (isHashtag) {
+    const mentionProfiles = await getBulkProfileMetadata([...pubkeys]);
+    mentionProfiles.forEach((val, key) => noteProfiles.set(key, val));
+  }
 
   // If entity was resolved, redirect directly
   if (results?.resolved) {
@@ -45,6 +72,10 @@ export default async function SearchPage({ searchParams }: Props) {
     }
   }
 
+  const notesToRender = isHashtag ? hashtagNotes : notes;
+  const resultCount = isHashtag ? notesToRender.length : profiles.length + notesToRender.length;
+  const emptyState = isHashtag ? notesToRender.length === 0 : profiles.length === 0 && notesToRender.length === 0;
+
   return (
     <main className="mx-auto max-w-6xl">
       <div className="mb-8 max-w-2xl">
@@ -54,7 +85,7 @@ export default async function SearchPage({ searchParams }: Props) {
       <h2 className="mb-6 text-lg font-semibold text-white/90">
         Results for &ldquo;{query}&rdquo;
         <span className="ml-2 text-sm font-normal text-white/50">
-          {profiles.length + notes.length} found
+          {resultCount} found
         </span>
       </h2>
 
@@ -93,7 +124,7 @@ export default async function SearchPage({ searchParams }: Props) {
         )}
 
         {/* Notes section */}
-        {notes.length > 0 && (
+        {notesToRender.length > 0 && (
           <section>
             {searchType === "all" && (
               <h3 className="mb-4 flex items-center gap-2 text-sm font-medium uppercase tracking-wider text-white/50">
@@ -101,7 +132,7 @@ export default async function SearchPage({ searchParams }: Props) {
               </h3>
             )}
             <div className="space-y-3">
-              {notes.map((note) => (
+              {notesToRender.map((note) => (
                 <UnifiedNoteCard
                   key={note.event.id}
                   event={note.event}
@@ -111,7 +142,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     reactions: note.reactions,
                     replies: note.replies,
                     reposts: note.reposts,
-                    zap_sats: note.zaps,
+                    zap_sats: "zap_sats" in note ? note.zap_sats : note.zaps,
                   }}
                   variant="compact"
                 />
@@ -121,7 +152,7 @@ export default async function SearchPage({ searchParams }: Props) {
         )}
 
         {/* Empty state */}
-        {profiles.length === 0 && notes.length === 0 && (
+        {emptyState && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Search className="mb-4 size-10 text-white/20" />
             <p className="text-lg font-medium text-white/60">No results found</p>

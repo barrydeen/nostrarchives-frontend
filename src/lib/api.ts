@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -213,5 +213,14 @@ export async function getTrendingHashtags(limit = 20) {
   return fetchFromApi<TrendingHashtagsResponse>(
     `/v1/hashtags/trending${buildQuery({ limit })}`,
     { revalidate: 600 },
+  );
+}
+
+export async function getHashtagNotes(hashtag: string, limit = 30, offset = 0) {
+  const tag = hashtag.trim().replace(/^#/, "");
+  if (!tag) return null;
+  return fetchFromApi<HashtagNotesResponse>(
+    `/v1/hashtags/${encodeURIComponent(tag)}/notes${buildQuery({ limit, offset })}`,
+    { revalidate: 60 },
   );
 }
