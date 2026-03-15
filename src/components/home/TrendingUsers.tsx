@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TrendingUp, UserPlus } from "lucide-react";
+import { Sparkles, UserPlus } from "lucide-react";
 import { TrendingUser, ProfileMetadataEntry } from "@/lib/types";
 import { formatNumber, truncateHex } from "@/lib/utils";
 
@@ -13,7 +13,7 @@ export function TrendingUsers({ users, profiles }: TrendingUsersProps) {
     return (
       <section>
         <SectionHeader />
-        <p className="text-sm text-white/40">No trending users in the last 24 hours.</p>
+        <p className="text-sm text-white/40">No up-and-coming users right now.</p>
       </section>
     );
   }
@@ -73,11 +73,11 @@ function SectionHeader() {
   return (
     <div className="mb-6 flex items-center gap-3">
       <div className="rounded-xl bg-neon-blue/10 p-2">
-        <TrendingUp className="size-5 text-neon-blue" />
+        <Sparkles className="size-5 text-neon-blue" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold">Trending Users</h2>
-        <p className="text-xs text-white/50">Most new followers in the last 24 hours</p>
+        <h2 className="text-lg font-semibold">Up &amp; Coming</h2>
+        <p className="text-xs text-white/50">New accounts gaining followers fast</p>
       </div>
     </div>
   );
