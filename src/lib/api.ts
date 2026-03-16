@@ -147,7 +147,7 @@ export async function getTopZappers(direction: "sent" | "received" = "received",
 }
 
 export async function getTrendingUsers(limit = 20) {
-  return fetchFromApi<TrendingUsersResponse>(`/v1/users/trending${buildQuery({ limit })}`, { revalidate: 30 });
+  return fetchFromApi<TrendingUsersResponse>(`/v1/users/trending${buildQuery({ limit })}`, { revalidate: 86400 });
 }
 
 export const getDailyStats = cache(async () => {
