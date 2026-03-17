@@ -1,7 +1,8 @@
 import { Metadata } from "next";
-import { getClientLeaderboard, getRelayLeaderboard } from "@/lib/api";
+import { getClientLeaderboard, getRelayLeaderboard, getDailyAnalytics } from "@/lib/api";
 import { ClientCard } from "@/components/analytics/ClientCard";
 import { RelayCard } from "@/components/analytics/RelayCard";
+import { AnalyticsChartsWrapper } from "./AnalyticsChartsWrapper";
 
 export const metadata: Metadata = {
   title: "Analytics",
@@ -10,9 +11,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AnalyticsPage() {
-  const [clientData, relayData] = await Promise.all([
+  const [clientData, relayData, analyticsData] = await Promise.all([
     getClientLeaderboard(100),
     getRelayLeaderboard(100),
+    getDailyAnalytics(30),
   ]);
 
   return (
@@ -23,6 +25,9 @@ export default async function AnalyticsPage() {
           Network-wide statistics and trends across the Nostr protocol.
         </p>
       </div>
+
+      {/* Daily analytics charts */}
+      <AnalyticsChartsWrapper initialData={analyticsData?.data ?? []} />
 
       {/* Grid of analytics cards */}
       <div className="grid gap-6 lg:grid-cols-2">
