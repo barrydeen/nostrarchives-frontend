@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -222,6 +222,15 @@ export async function getHashtagNotes(hashtag: string, limit = 30, offset = 0) {
   return fetchFromApi<HashtagNotesResponse>(
     `/v1/hashtags/${encodeURIComponent(tag)}/notes${buildQuery({ limit, offset })}`,
     { revalidate: 60 },
+  );
+}
+
+// ─── Daily Analytics ────────────────────────────────────────────────
+
+export async function getDailyAnalytics(days = 30) {
+  return fetchFromApi<DailyAnalyticsResponse>(
+    `/v1/analytics/daily${buildQuery({ days })}`,
+    { revalidate: 3600 },
   );
 }
 

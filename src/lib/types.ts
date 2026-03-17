@@ -274,6 +274,20 @@ export interface TrendingHashtagsResponse {
   hashtags: TrendingHashtag[];
 }
 
+// ─── Daily Analytics ────────────────────────────────────────────────
+
+export interface DailyAnalyticsEntry {
+  date: string; // YYYY-MM-DD
+  active_users: number;
+  zaps_sent: number;
+  notes_posted: number;
+}
+
+export interface DailyAnalyticsResponse {
+  data: DailyAnalyticsEntry[];
+  range: { from: string; to: string };
+}
+
 // ─── Client Leaderboard ─────────────────────────────────────────────
 
 export interface ClientEntry {
