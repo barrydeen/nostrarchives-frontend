@@ -9,7 +9,7 @@ const navItems = [
   { href: "/", label: "Overview" },
   { href: "/explore", label: "Explore" },
   { href: "/trending", label: "Trending" },
-  { href: "/clients", label: "Clients" },
+  { href: "/analytics", label: "Analytics" },
 ];
 
 export function SiteHeader() {
