@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Users } from "lucide-react";
-import { getProfileMetadata, getRecentEvents, getSocialGraph, getBulkProfileMetadata } from "@/lib/api";
-import { normalizeEvents } from "@/lib/normalizers";
-import { extractMentionPubkeysFromEvents } from "@/lib/mentions";
-import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
+import { ExternalLink, Users, Zap } from "lucide-react";
+import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileNotes, getProfileZapStats } from "@/lib/api";
 import { ProfileName } from "@/components/ProfileName";
 import { TruncatedBio } from "@/components/profile/TruncatedBio";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { formatNumber, truncateHex } from "@/lib/utils";
+import { ProfileMetadataEntry } from "@/lib/types";
 
 interface ProfilePageProps {
   params: Promise<{ pubkey: string }>;
@@ -24,33 +23,49 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     notFound();
   }
 
-  const [social, metadata, eventsResponse] = await Promise.all([
+  const [social, metadata, notesResponse, zapStats] = await Promise.all([
     getSocialGraph(pubkey),
     getProfileMetadata(pubkey),
-    getRecentEvents({ pubkey, limit: 12, kind: 1 }),
+    getProfileNotes(pubkey, 20, 0),
+    getProfileZapStats(pubkey),
   ]);
 
-  const events = normalizeEvents(eventsResponse);
-  const totalNotes = (eventsResponse && !Array.isArray(eventsResponse) && "total" in eventsResponse)
-    ? (eventsResponse as { total?: number }).total ?? events.length
-    : events.length;
+  const events = notesResponse?.events ?? [];
+  const totalNotes = notesResponse?.total ?? events.length;
 
-  // Bulk-fetch profile names for follows/followers chips and the page owner
+  // Build profiles map from notes response + network pubkeys
   const networkPubkeys = new Set<string>();
   networkPubkeys.add(pubkey);
   (social?.follows.pubkeys.slice(0, 18) ?? []).forEach((pk) => networkPubkeys.add(pk));
   (social?.followers.pubkeys.slice(0, 18) ?? []).forEach((pk) => networkPubkeys.add(pk));
+  events.forEach((e) => networkPubkeys.add(e.pubkey));
 
-  // Include mention pubkeys from latest notes so @DisplayName renders in content
-  extractMentionPubkeysFromEvents(events).forEach((pk) => networkPubkeys.add(pk));
-
+  // Merge API response profiles with bulk-fetched network profiles
   const networkProfiles = await getBulkProfileMetadata([...networkPubkeys]);
+
+  // Also merge in profiles from notes response
+  if (notesResponse?.profiles) {
+    for (const [pk, data] of Object.entries(notesResponse.profiles)) {
+      if (!networkProfiles.has(pk)) {
+        networkProfiles.set(pk, {
+          pubkey: pk,
+          name: data.name,
+          display_name: data.display_name,
+          preferred_name: data.display_name || data.name,
+          picture: data.picture,
+        } as ProfileMetadataEntry);
+      }
+    }
+  }
 
   const profile = metadata?.metadata ?? {};
   const name = profile.display_name || profile.name || truncateHex(pubkey);
   const bio = profile.about ?? "";
   const nip05 = profile.nip05 as string | undefined;
   const picture = typeof profile.picture === "string" ? profile.picture : undefined;
+
+  const zapsSentSats = zapStats?.sent?.total_sats ?? 0;
+  const zapsReceivedSats = zapStats?.received?.total_sats ?? 0;
 
   return (
     <div className="min-w-0 space-y-6">
@@ -89,6 +104,20 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <span className="font-semibold text-white">{formatNumber(totalNotes)}</span>
                 <span className="ml-1 text-white/50">Notes</span>
               </span>
+              {zapsSentSats > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Zap className="size-3 text-amber-400" />
+                  <span className="font-semibold text-amber-300">{formatNumber(zapsSentSats)}</span>
+                  <span className="text-white/50">Sent</span>
+                </span>
+              )}
+              {zapsReceivedSats > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Zap className="size-3 text-amber-400" />
+                  <span className="font-semibold text-amber-300">{formatNumber(zapsReceivedSats)}</span>
+                  <span className="text-white/50">Received</span>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -101,29 +130,13 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         )}
       </section>
 
-      {/* ── Notes Feed ── */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Notes</h2>
-          <span className="text-xs text-white/30">{formatNumber(totalNotes)} indexed</span>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {events.map((event) => (
-            <UnifiedNoteCard
-              key={event.id}
-              event={event}
-              profile={networkProfiles.get(event.pubkey)}
-              profiles={networkProfiles}
-              engagement={{
-                reactions: event.reactions ?? 0,
-                replies: event.replies ?? 0,
-                reposts: event.reposts ?? 0,
-                zap_sats: event.zap_sats ?? 0,
-              }}
-            />
-          ))}
-        </div>
-      </section>
+      {/* ── Tabbed Content ── */}
+      <ProfileTabs
+        pubkey={pubkey}
+        initialNotes={events}
+        initialNotesTotal={totalNotes}
+        initialProfiles={networkProfiles}
+      />
 
       {/* ── Network ── */}
       <section className="rounded-2xl border border-white/10 bg-card/70 p-4 sm:p-5 shadow-xl">
