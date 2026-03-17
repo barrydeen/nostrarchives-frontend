@@ -273,3 +273,15 @@ export interface TrendingHashtag {
 export interface TrendingHashtagsResponse {
   hashtags: TrendingHashtag[];
 }
+
+// ─── Client Leaderboard ─────────────────────────────────────────────
+
+export interface ClientEntry {
+  client_name: string;
+  note_count: number;
+  user_count: number;
+}
+
+export interface ClientLeaderboardResponse {
+  clients: ClientEntry[];
+}
