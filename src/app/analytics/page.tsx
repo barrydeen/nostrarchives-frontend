@@ -1,6 +1,7 @@
 import { Metadata } from "next";
-import { getClientLeaderboard } from "@/lib/api";
+import { getClientLeaderboard, getRelayLeaderboard } from "@/lib/api";
 import { ClientCard } from "@/components/analytics/ClientCard";
+import { RelayCard } from "@/components/analytics/RelayCard";
 
 export const metadata: Metadata = {
   title: "Analytics",
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function AnalyticsPage() {
-  const clientData = await getClientLeaderboard(100);
+  const [clientData, relayData] = await Promise.all([
+    getClientLeaderboard(100),
+    getRelayLeaderboard(100),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -20,9 +24,10 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      {/* Grid of analytics cards — more sections will go here */}
+      {/* Grid of analytics cards */}
       <div className="grid gap-6 lg:grid-cols-2">
         <ClientCard clients={clientData?.clients ?? []} />
+        <RelayCard relays={relayData?.relays ?? []} />
       </div>
     </div>
   );

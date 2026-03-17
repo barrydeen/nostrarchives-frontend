@@ -285,3 +285,14 @@ export interface ClientEntry {
 export interface ClientLeaderboardResponse {
   clients: ClientEntry[];
 }
+
+// ─── Relay Leaderboard ──────────────────────────────────────────────
+
+export interface RelayLeaderboardEntry {
+  relay_url: string;
+  user_count: number;
+}
+
+export interface RelayLeaderboardResponse {
+  relays: RelayLeaderboardEntry[];
+}
