@@ -310,3 +310,55 @@ export interface RelayLeaderboardEntry {
 export interface RelayLeaderboardResponse {
   relays: RelayLeaderboardEntry[];
 }
+
+// ─── Profile Tabs ───────────────────────────────────────────────────
+
+export type ProfileMap = Record<string, {
+  name: string | null;
+  display_name: string | null;
+  picture: string | null;
+  nip05: string | null;
+}>;
+
+export interface ProfileNotesResponse {
+  events: StoredEvent[];
+  total: number;
+  profiles: ProfileMap;
+}
+
+export interface ProfileRepliesResponse {
+  events: StoredEvent[];
+  total: number;
+  profiles: ProfileMap;
+}
+
+export interface ProfileZapEntry {
+  event: StoredEvent;
+  amount_sats: number;
+  recipient?: string | null;
+  sender?: string | null;
+  zapped_event_id?: string | null;
+}
+
+export interface ProfileZapsSentResponse {
+  zaps: ProfileZapEntry[];
+  total: number;
+  profiles: ProfileMap;
+}
+
+export interface ProfileZapsReceivedResponse {
+  zaps: ProfileZapEntry[];
+  total: number;
+  profiles: ProfileMap;
+}
+
+export interface ZapAggregate {
+  total_sats: number;
+  zap_count: number;
+}
+
+export interface ProfileZapStatsResponse {
+  pubkey: string;
+  sent: ZapAggregate;
+  received: ZapAggregate;
+}

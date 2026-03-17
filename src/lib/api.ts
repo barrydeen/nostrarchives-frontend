@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse, ProfileNotesResponse, ProfileRepliesResponse, ProfileZapsSentResponse, ProfileZapsReceivedResponse, ProfileZapStatsResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -249,5 +249,42 @@ export async function getRelayLeaderboard(limit = 50, offset = 0) {
   return fetchFromApi<RelayLeaderboardResponse>(
     `/v1/relays/leaderboard${buildQuery({ limit, offset })}`,
     { revalidate: 1800 },
+  );
+}
+
+// ─── Profile Tabs ───────────────────────────────────────────────────
+
+export async function getProfileNotes(pubkey: string, limit = 20, offset = 0) {
+  return fetchFromApi<ProfileNotesResponse>(
+    `/v1/profiles/${pubkey}/notes${buildQuery({ limit, offset })}`,
+    { revalidate: 60 },
+  );
+}
+
+export async function getProfileReplies(pubkey: string, limit = 20, offset = 0) {
+  return fetchFromApi<ProfileRepliesResponse>(
+    `/v1/profiles/${pubkey}/replies${buildQuery({ limit, offset })}`,
+    { revalidate: 60 },
+  );
+}
+
+export async function getProfileZapsSent(pubkey: string, limit = 20, offset = 0) {
+  return fetchFromApi<ProfileZapsSentResponse>(
+    `/v1/profiles/${pubkey}/zaps/sent${buildQuery({ limit, offset })}`,
+    { revalidate: 120 },
+  );
+}
+
+export async function getProfileZapsReceived(pubkey: string, limit = 20, offset = 0) {
+  return fetchFromApi<ProfileZapsReceivedResponse>(
+    `/v1/profiles/${pubkey}/zaps/received${buildQuery({ limit, offset })}`,
+    { revalidate: 120 },
+  );
+}
+
+export async function getProfileZapStats(pubkey: string) {
+  return fetchFromApi<ProfileZapStatsResponse>(
+    `/v1/profiles/${pubkey}/zap-stats`,
+    { revalidate: 300 },
   );
 }
