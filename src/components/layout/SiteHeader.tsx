@@ -6,7 +6,6 @@ import { Radio, Search, X } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 
 const navItems = [
-  { href: "/", label: "Overview" },
   { href: "/explore", label: "Explore" },
   { href: "/trending", label: "Trending" },
   { href: "/analytics", label: "Analytics" },
