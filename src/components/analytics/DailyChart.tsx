@@ -112,7 +112,7 @@ export function DailyChart({ data }: DailyChartProps) {
       <SingleChart
         data={data}
         dataKey="zaps_sent"
-        title="Daily Zaps Sent"
+        title="Daily Sats Zapped"
         color="#c084fc"
         gradientId="gradientZapsSent"
       />
