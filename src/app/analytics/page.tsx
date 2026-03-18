@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { getClientLeaderboard, getRelayLeaderboard, getDailyAnalytics } from "@/lib/api";
 import { ClientCard } from "@/components/analytics/ClientCard";
 import { RelayCard } from "@/components/analytics/RelayCard";
+import { LeaderboardCard } from "@/components/analytics/LeaderboardCard";
 import { AnalyticsChartsWrapper } from "./AnalyticsChartsWrapper";
 
 export const metadata: Metadata = {
@@ -28,6 +29,17 @@ export default async function AnalyticsPage() {
 
       {/* Daily analytics charts */}
       <AnalyticsChartsWrapper initialData={analyticsData?.data ?? []} />
+
+      {/* Leaderboard section */}
+      <div>
+        <h2 className="text-lg font-semibold mb-4">Leaderboards</h2>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <LeaderboardCard type="zappers" />
+          <LeaderboardCard type="posters" />
+          <LeaderboardCard type="liked" />
+          <LeaderboardCard type="shared" />
+        </div>
+      </div>
 
       {/* Grid of analytics cards */}
       <div className="grid gap-6 lg:grid-cols-2">

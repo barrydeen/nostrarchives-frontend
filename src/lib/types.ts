@@ -162,6 +162,7 @@ export interface TopZapper {
 
 export interface TopZappersResponse {
   direction: string;
+  range?: string;
   zappers: TopZapper[];
 }
 
@@ -361,4 +362,36 @@ export interface ProfileZapStatsResponse {
   pubkey: string;
   sent: ZapAggregate;
   received: ZapAggregate;
+}
+
+// ─── Analytics Leaderboards ─────────────────────────────────────────
+
+export interface TopPoster {
+  pubkey: string;
+  note_count: number;
+}
+
+export interface TopPostersResponse {
+  range: string;
+  authors: TopPoster[];
+}
+
+export interface MostLikedAuthor {
+  pubkey: string;
+  like_count: number;
+}
+
+export interface MostLikedResponse {
+  range: string;
+  authors: MostLikedAuthor[];
+}
+
+export interface MostSharedAuthor {
+  pubkey: string;
+  repost_count: number;
+}
+
+export interface MostSharedResponse {
+  range: string;
+  authors: MostSharedAuthor[];
 }
