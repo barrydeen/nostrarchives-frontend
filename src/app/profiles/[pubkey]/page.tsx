@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { ExternalLink, Zap } from "lucide-react";
-import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileNotes, getProfileZapStats } from "@/lib/api";
+import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileNotes, getProfileReplies, getProfileZapStats } from "@/lib/api";
 import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { formatNumber, truncateHex } from "@/lib/utils";
@@ -21,15 +21,18 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
     notFound();
   }
 
-  const [social, metadata, notesResponse, zapStats] = await Promise.all([
+  const [social, metadata, notesResponse, repliesResponse, zapStats] = await Promise.all([
     getSocialGraph(pubkey),
     getProfileMetadata(pubkey),
     getProfileNotes(pubkey, 20, 0),
+    getProfileReplies(pubkey, 1, 0),
     getProfileZapStats(pubkey),
   ]);
 
   const events = notesResponse?.events ?? [];
   const totalNotes = notesResponse?.total ?? events.length;
+  const totalReplies = repliesResponse?.total ?? 0;
+  const totalKind1 = totalNotes + totalReplies;
 
   // Build profiles map from notes response + network pubkeys
   const networkPubkeys = new Set<string>();
@@ -99,7 +102,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
                 <span className="ml-1 text-white/50">Following</span>
               </span>
               <span>
-                <span className="font-semibold text-white">{formatNumber(totalNotes)}</span>
+                <span className="font-semibold text-white">{formatNumber(totalKind1)}</span>
                 <span className="ml-1 text-white/50">Notes</span>
               </span>
               {zapsSentSats > 0 && (
