@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ExternalLink, Users, Zap } from "lucide-react";
+import { ExternalLink, Zap } from "lucide-react";
 import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileNotes, getProfileZapStats } from "@/lib/api";
-import { ProfileName } from "@/components/ProfileName";
 import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { formatNumber, truncateHex } from "@/lib/utils";
@@ -136,47 +134,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         initialNotes={events}
         initialNotesTotal={totalNotes}
         initialProfiles={networkProfiles}
+        followsPubkeys={social?.follows.pubkeys ?? []}
+        followsCount={social?.follows.count ?? 0}
+        followersPubkeys={social?.followers.pubkeys ?? []}
+        followersCount={social?.followers.count ?? 0}
       />
-
-      {/* ── Network ── */}
-      <section className="rounded-2xl border border-white/10 bg-card/70 p-4 sm:p-5 shadow-xl">
-        <div className="flex items-center gap-2 text-white/60">
-          <Users className="size-4" />
-          <h2 className="text-base font-semibold">Network</h2>
-        </div>
-        <div className="mt-3 grid gap-5 md:grid-cols-2">
-          <div>
-            <p className="text-xs text-white/50 mb-2">Following</p>
-            <div className="flex flex-wrap gap-1.5">
-              {social?.follows.pubkeys.slice(0, 18).map((follow) => (
-                <Link
-                  key={follow}
-                  href={`/profiles/${follow}`}
-                  prefetch={false}
-                  className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/70 hover:border-white/20 transition-colors"
-                >
-                  <ProfileName pubkey={follow} profile={networkProfiles.get(follow)} className="text-xs" showAvatar />
-                </Link>
-              )) || <p className="text-xs text-white/40">No data yet.</p>}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-white/50 mb-2">Followers</p>
-            <div className="flex flex-wrap gap-1.5">
-              {social?.followers.pubkeys.slice(0, 18).map((follower) => (
-                <Link
-                  key={follower}
-                  href={`/profiles/${follower}`}
-                  prefetch={false}
-                  className="rounded-full border border-white/10 px-2.5 py-0.5 text-xs text-white/70 hover:border-white/20 transition-colors"
-                >
-                  <ProfileName pubkey={follower} profile={networkProfiles.get(follower)} className="text-xs" showAvatar />
-                </Link>
-              )) || <p className="text-xs text-white/40">No data yet.</p>}
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

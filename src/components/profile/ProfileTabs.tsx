@@ -1,33 +1,33 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { FileText, MessageSquare, Zap } from "lucide-react";
+import Link from "next/link";
+import { FileText, MessageSquare, Zap, UserPlus, Users } from "lucide-react";
 import { StoredEvent, ProfileMetadataEntry, ProfileMap, ProfileZapEntry } from "@/lib/types";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { ZapCard } from "@/components/profile/ZapCard";
+import { truncateHex } from "@/lib/utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
-type Tab = "notes" | "replies" | "zaps_sent" | "zaps_received";
+type Tab = "notes" | "replies" | "zaps_sent" | "zaps_received" | "followers" | "following";
 
 interface TabDef {
   id: Tab;
   label: string;
   icon: React.ReactNode;
+  count?: number;
 }
-
-const TABS: TabDef[] = [
-  { id: "notes", label: "Notes", icon: <FileText className="size-4" /> },
-  { id: "replies", label: "Replies", icon: <MessageSquare className="size-4" /> },
-  { id: "zaps_sent", label: "Zaps Sent", icon: <Zap className="size-4" /> },
-  { id: "zaps_received", label: "Zaps Received", icon: <Zap className="size-4" /> },
-];
 
 interface ProfileTabsProps {
   pubkey: string;
   initialNotes: StoredEvent[];
   initialNotesTotal: number;
   initialProfiles: Map<string, ProfileMetadataEntry>;
+  followsPubkeys: string[];
+  followsCount: number;
+  followersPubkeys: string[];
+  followersCount: number;
 }
 
 function profileMapToMetadataMap(pm: ProfileMap): Map<string, ProfileMetadataEntry> {
@@ -44,7 +44,25 @@ function profileMapToMetadataMap(pm: ProfileMap): Map<string, ProfileMetadataEnt
   return map;
 }
 
-export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialProfiles }: ProfileTabsProps) {
+export function ProfileTabs({
+  pubkey,
+  initialNotes,
+  initialNotesTotal,
+  initialProfiles,
+  followsPubkeys,
+  followsCount,
+  followersPubkeys,
+  followersCount,
+}: ProfileTabsProps) {
+  const TABS: TabDef[] = [
+    { id: "notes", label: "Notes", icon: <FileText className="size-4" /> },
+    { id: "replies", label: "Replies", icon: <MessageSquare className="size-4" /> },
+    { id: "followers", label: "Followers", icon: <Users className="size-4" />, count: followersCount },
+    { id: "following", label: "Following", icon: <UserPlus className="size-4" />, count: followsCount },
+    { id: "zaps_sent", label: "Zaps Sent", icon: <Zap className="size-4" /> },
+    { id: "zaps_received", label: "Zaps Received", icon: <Zap className="size-4" /> },
+  ];
+
   const [activeTab, setActiveTab] = useState<Tab>("notes");
   const [loading, setLoading] = useState(false);
 
@@ -77,11 +95,58 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
   const [zapsReceivedProfiles, setZapsReceivedProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
   const [zapsReceivedLoaded, setZapsReceivedLoaded] = useState(false);
 
+  // Followers/following profiles (lazy-loaded via bulk metadata)
+  const [followersProfiles, setFollowersProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
+  const [followersLoaded, setFollowersLoaded] = useState(false);
+  const [followingProfiles, setFollowingProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
+  const [followingLoaded, setFollowingLoaded] = useState(false);
+
+  const fetchBulkProfiles = useCallback(async (pubkeys: string[]): Promise<Map<string, ProfileMetadataEntry>> => {
+    if (!pubkeys.length) return new Map();
+    try {
+      const res = await fetch(`${API_BASE_URL}/v1/profiles/metadata`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ pubkeys: pubkeys.slice(0, 500) }),
+      });
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const data = await res.json();
+      const map = new Map<string, ProfileMetadataEntry>();
+      for (const p of data.profiles || []) {
+        map.set(p.pubkey, p);
+      }
+      return map;
+    } catch (err) {
+      console.error("[ProfileTabs] Failed to fetch bulk profiles:", err);
+      return new Map();
+    }
+  }, []);
+
   const fetchTab = useCallback(async (tab: Tab, sort?: string) => {
-    if (tab === "notes" && sort === "recent" && notesSort === "recent") return; // initial notes already loaded for recent sort
+    if (tab === "notes" && sort === "recent" && notesSort === "recent") return;
     if (tab === "replies" && repliesLoaded && !sort) return;
     if (tab === "zaps_sent" && zapsSentLoaded && !sort) return;
     if (tab === "zaps_received" && zapsReceivedLoaded && !sort) return;
+    if (tab === "followers" && followersLoaded) return;
+    if (tab === "following" && followingLoaded) return;
+
+    // Followers/following use bulk metadata fetch
+    if (tab === "followers") {
+      setLoading(true);
+      const profiles = await fetchBulkProfiles(followersPubkeys);
+      setFollowersProfiles(profiles);
+      setFollowersLoaded(true);
+      setLoading(false);
+      return;
+    }
+    if (tab === "following") {
+      setLoading(true);
+      const profiles = await fetchBulkProfiles(followsPubkeys);
+      setFollowingProfiles(profiles);
+      setFollowingLoaded(true);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -121,7 +186,7 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
     } finally {
       setLoading(false);
     }
-  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded, notesSort]);
+  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded, followersLoaded, followingLoaded, notesSort, followersPubkeys, followsPubkeys, fetchBulkProfiles]);
 
   useEffect(() => {
     fetchTab(activeTab);
@@ -167,6 +232,11 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
           >
             {tab.icon}
             {tab.label}
+            {tab.count !== undefined && (
+              <span className={`ml-1 text-xs ${activeTab === tab.id ? "text-white/70" : "text-white/30"}`}>
+                {tab.count.toLocaleString()}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -192,6 +262,22 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
               profiles={repliesProfiles} 
               onSortChange={handleRepliesSort}
               currentSort={repliesSort}
+            />
+          )}
+          {activeTab === "followers" && (
+            <ProfileGrid
+              pubkeys={followersPubkeys}
+              profiles={followersProfiles}
+              total={followersCount}
+              emptyMessage="No followers found."
+            />
+          )}
+          {activeTab === "following" && (
+            <ProfileGrid
+              pubkeys={followsPubkeys}
+              profiles={followingProfiles}
+              total={followsCount}
+              emptyMessage="Not following anyone."
             />
           )}
           {activeTab === "zaps_sent" && (
@@ -306,6 +392,68 @@ function ZapGrid({ zaps, total, profiles, direction, onSortChange, currentSort }
             />
           </div>
         ))}
+      </div>
+    </>
+  );
+}
+
+function ProfileGrid({ pubkeys, profiles, total, emptyMessage }: {
+  pubkeys: string[];
+  profiles: Map<string, ProfileMetadataEntry>;
+  total: number;
+  emptyMessage: string;
+}) {
+  if (pubkeys.length === 0) {
+    return <p className="text-sm text-white/30 py-8 text-center">{emptyMessage}</p>;
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-white/30">
+          Showing {pubkeys.length.toLocaleString()} of {total.toLocaleString()}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {pubkeys.map((pk) => {
+          const profile = profiles.get(pk);
+          const displayName = profile?.preferred_name || profile?.display_name || profile?.name || truncateHex(pk);
+          const picture = profile?.picture;
+
+          return (
+            <Link
+              key={pk}
+              href={`/profiles/${pk}`}
+              prefetch={false}
+              className="group flex items-center gap-3 rounded-xl border border-white/10 bg-card/70 p-3 transition-all hover:border-white/20 hover:bg-card/90 hover:shadow-lg"
+            >
+              {/* Avatar */}
+              {picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={picture}
+                  alt=""
+                  className="size-11 shrink-0 rounded-full object-cover ring-1 ring-white/10 group-hover:ring-white/20 transition-all"
+                  loading="lazy"
+                />
+              ) : (
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon-pink/30 to-neon-blue/30 ring-1 ring-white/10 text-sm font-bold text-white/60 group-hover:ring-white/20 transition-all">
+                  {displayName.charAt(0).toUpperCase()}
+                </span>
+              )}
+
+              {/* Info */}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate group-hover:text-white transition-colors">
+                  {displayName}
+                </p>
+                <p className="text-xs text-white/30 truncate mt-0.5">
+                  {truncateHex(pk)}
+                </p>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </>
   );
