@@ -48,6 +48,12 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
   const [activeTab, setActiveTab] = useState<Tab>("notes");
   const [loading, setLoading] = useState(false);
 
+  // Sort state for each tab
+  const [notesSort, setNotesSort] = useState("recent");
+  const [repliesSort, setRepliesSort] = useState("recent");
+  const [zapsSentSort, setZapsSentSort] = useState("recent");
+  const [zapsReceivedSort, setZapsReceivedSort] = useState("recent");
+
   // Notes state (pre-loaded)
   const [notes, setNotes] = useState(initialNotes);
   const [notesTotal, setNotesTotal] = useState(initialNotesTotal);
@@ -71,24 +77,30 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
   const [zapsReceivedProfiles, setZapsReceivedProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
   const [zapsReceivedLoaded, setZapsReceivedLoaded] = useState(false);
 
-  const fetchTab = useCallback(async (tab: Tab) => {
-    if (tab === "notes") return; // already loaded
-    if (tab === "replies" && repliesLoaded) return;
-    if (tab === "zaps_sent" && zapsSentLoaded) return;
-    if (tab === "zaps_received" && zapsReceivedLoaded) return;
+  const fetchTab = useCallback(async (tab: Tab, sort?: string) => {
+    if (tab === "notes" && sort === "recent" && notesSort === "recent") return; // initial notes already loaded for recent sort
+    if (tab === "replies" && repliesLoaded && !sort) return;
+    if (tab === "zaps_sent" && zapsSentLoaded && !sort) return;
+    if (tab === "zaps_received" && zapsReceivedLoaded && !sort) return;
 
     setLoading(true);
     try {
+      const sortParam = sort ? `&sort=${sort}` : "";
       const endpoint =
-        tab === "replies" ? `/v1/profiles/${pubkey}/replies?limit=20`
-        : tab === "zaps_sent" ? `/v1/profiles/${pubkey}/zaps/sent?limit=20`
-        : `/v1/profiles/${pubkey}/zaps/received?limit=20`;
+        tab === "notes" ? `/v1/profiles/${pubkey}/notes?limit=20${sortParam}`
+        : tab === "replies" ? `/v1/profiles/${pubkey}/replies?limit=20${sortParam}`
+        : tab === "zaps_sent" ? `/v1/profiles/${pubkey}/zaps/sent?limit=20${sortParam}`
+        : `/v1/profiles/${pubkey}/zaps/received?limit=20${sortParam}`;
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`, { headers: { Accept: "application/json" } });
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
       const data = await res.json();
 
-      if (tab === "replies") {
+      if (tab === "notes") {
+        setNotes(data.events || []);
+        setNotesTotal(data.total || 0);
+        setNotesProfiles(profileMapToMetadataMap(data.profiles || {}));
+      } else if (tab === "replies") {
         setReplies(data.events || []);
         setRepliesTotal(data.total || 0);
         setRepliesProfiles(profileMapToMetadataMap(data.profiles || {}));
@@ -109,7 +121,7 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
     } finally {
       setLoading(false);
     }
-  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded]);
+  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded, notesSort]);
 
   useEffect(() => {
     fetchTab(activeTab);
@@ -117,6 +129,26 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
 
   const handleTabClick = (tab: Tab) => {
     setActiveTab(tab);
+  };
+
+  const handleNotesSort = (sort: string) => {
+    setNotesSort(sort);
+    fetchTab("notes", sort);
+  };
+
+  const handleRepliesSort = (sort: string) => {
+    setRepliesSort(sort);
+    fetchTab("replies", sort);
+  };
+
+  const handleZapsSentSort = (sort: string) => {
+    setZapsSentSort(sort);
+    fetchTab("zaps_sent", sort);
+  };
+
+  const handleZapsReceivedSort = (sort: string) => {
+    setZapsReceivedSort(sort);
+    fetchTab("zaps_received", sort);
   };
 
   return (
@@ -145,16 +177,42 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
       ) : (
         <>
           {activeTab === "notes" && (
-            <EventGrid events={notes} total={notesTotal} profiles={notesProfiles} />
+            <EventGrid 
+              events={notes} 
+              total={notesTotal} 
+              profiles={notesProfiles} 
+              onSortChange={handleNotesSort}
+              currentSort={notesSort}
+            />
           )}
           {activeTab === "replies" && (
-            <EventGrid events={replies} total={repliesTotal} profiles={repliesProfiles} />
+            <EventGrid 
+              events={replies} 
+              total={repliesTotal} 
+              profiles={repliesProfiles} 
+              onSortChange={handleRepliesSort}
+              currentSort={repliesSort}
+            />
           )}
           {activeTab === "zaps_sent" && (
-            <ZapGrid zaps={zapsSent} total={zapsSentTotal} profiles={zapsSentProfiles} direction="sent" />
+            <ZapGrid 
+              zaps={zapsSent} 
+              total={zapsSentTotal} 
+              profiles={zapsSentProfiles} 
+              direction="sent" 
+              onSortChange={handleZapsSentSort}
+              currentSort={zapsSentSort}
+            />
           )}
           {activeTab === "zaps_received" && (
-            <ZapGrid zaps={zapsReceived} total={zapsReceivedTotal} profiles={zapsReceivedProfiles} direction="received" />
+            <ZapGrid 
+              zaps={zapsReceived} 
+              total={zapsReceivedTotal} 
+              profiles={zapsReceivedProfiles} 
+              direction="received" 
+              onSortChange={handleZapsReceivedSort}
+              currentSort={zapsReceivedSort}
+            />
           )}
         </>
       )}
@@ -162,10 +220,12 @@ export function ProfileTabs({ pubkey, initialNotes, initialNotesTotal, initialPr
   );
 }
 
-function EventGrid({ events, total, profiles }: {
+function EventGrid({ events, total, profiles, onSortChange, currentSort }: {
   events: StoredEvent[];
   total: number;
   profiles: Map<string, ProfileMetadataEntry>;
+  onSortChange?: (sort: string) => void;
+  currentSort?: string;
 }) {
   if (events.length === 0) {
     return <p className="text-sm text-white/30 py-8 text-center">No events found.</p>;
@@ -175,32 +235,47 @@ function EventGrid({ events, total, profiles }: {
     <>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-white/30">{total.toLocaleString()} total</span>
+        {onSortChange && (
+          <select
+            value={currentSort || "recent"}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="text-xs bg-card/50 border border-white/10 rounded-lg px-2 py-1 text-white/70 focus:border-neon-blue outline-none"
+          >
+            <option value="recent">Recent</option>
+            <option value="likes">Most Liked</option>
+            <option value="zaps">Most Zapped</option>
+            <option value="reposts">Most Reposted</option>
+          </select>
+        )}
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="columns-1 md:columns-2 gap-3 space-y-3">
         {events.map((event) => (
-          <UnifiedNoteCard
-            key={event.id}
-            event={event}
-            profile={profiles.get(event.pubkey)}
-            profiles={profiles}
-            engagement={{
-              reactions: event.reactions ?? 0,
-              replies: event.replies ?? 0,
-              reposts: event.reposts ?? 0,
-              zap_sats: event.zap_sats ?? 0,
-            }}
-          />
+          <div key={event.id} className="break-inside-avoid">
+            <UnifiedNoteCard
+              event={event}
+              profile={profiles.get(event.pubkey)}
+              profiles={profiles}
+              engagement={{
+                reactions: event.reactions ?? 0,
+                replies: event.replies ?? 0,
+                reposts: event.reposts ?? 0,
+                zap_sats: event.zap_sats ?? 0,
+              }}
+            />
+          </div>
         ))}
       </div>
     </>
   );
 }
 
-function ZapGrid({ zaps, total, profiles, direction }: {
+function ZapGrid({ zaps, total, profiles, direction, onSortChange, currentSort }: {
   zaps: ProfileZapEntry[];
   total: number;
   profiles: Map<string, ProfileMetadataEntry>;
   direction: "sent" | "received";
+  onSortChange?: (sort: string) => void;
+  currentSort?: string;
 }) {
   if (zaps.length === 0) {
     return <p className="text-sm text-white/30 py-8 text-center">No zaps found.</p>;
@@ -210,15 +285,26 @@ function ZapGrid({ zaps, total, profiles, direction }: {
     <>
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs text-white/30">{total.toLocaleString()} total</span>
+        {onSortChange && (
+          <select
+            value={currentSort || "recent"}
+            onChange={(e) => onSortChange(e.target.value)}
+            className="text-xs bg-card/50 border border-white/10 rounded-lg px-2 py-1 text-white/70 focus:border-neon-blue outline-none"
+          >
+            <option value="recent">Most Recent</option>
+            <option value="amount">Largest Amount</option>
+          </select>
+        )}
       </div>
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="columns-1 md:columns-2 gap-3 space-y-3">
         {zaps.map((zap) => (
-          <ZapCard
-            key={zap.event.id}
-            zap={zap}
-            profiles={profiles}
-            direction={direction}
-          />
+          <div key={zap.event.id} className="break-inside-avoid">
+            <ZapCard
+              zap={zap}
+              profiles={profiles}
+              direction={direction}
+            />
+          </div>
         ))}
       </div>
     </>

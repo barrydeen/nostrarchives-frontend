@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo } from "react";
+import { Fragment, useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ProfileMetadataEntry } from "@/lib/types";
 import { truncateHex } from "@/lib/utils";
@@ -11,6 +11,8 @@ interface NoteContentProps {
   profiles?: Map<string, ProfileMetadataEntry>;
   /** Max lines before truncation (0 = no limit) */
   maxLines?: number;
+  /** Whether to show expand/collapse controls (default: true when used from profile tabs) */
+  expandable?: boolean;
 }
 
 // Patterns
@@ -132,8 +134,11 @@ function EventMention({ eventId }: { eventId: string }) {
   );
 }
 
-export function NoteContent({ content, profiles, maxLines = 0 }: NoteContentProps) {
+export function NoteContent({ content, profiles, maxLines = 0, expandable = true }: NoteContentProps) {
   const segments = useMemo(() => parseContent(content), [content]);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showExpandButton, setShowExpandButton] = useState(false);
+  const textRef = useRef<HTMLDivElement>(null);
 
   // Separate media (images/videos) from inline content
   const inlineSegments = segments.filter((s) => s.type !== "image" && s.type !== "video");
@@ -148,12 +153,33 @@ export function NoteContent({ content, profiles, maxLines = 0 }: NoteContentProp
     5: "line-clamp-5",
     6: "line-clamp-6",
   };
-  const lineClamp = maxLines > 0 ? (lineClampMap[maxLines] ?? "line-clamp-4") : "";
+  const lineClamp = maxLines > 0 && !isExpanded ? (lineClampMap[maxLines] ?? "line-clamp-4") : "";
+
+  // Check if text content is actually overflowing
+  useEffect(() => {
+    if (!expandable || maxLines <= 0 || !textRef.current) {
+      setShowExpandButton(false);
+      return;
+    }
+
+    const element = textRef.current;
+    const isOverflowing = element.scrollHeight > element.clientHeight;
+    setShowExpandButton(isOverflowing);
+  }, [expandable, maxLines, inlineSegments]);
+
+  // Media display logic
+  const visibleMedia = expandable && !isExpanded && mediaSegments.length > 2 
+    ? mediaSegments.slice(0, 2) 
+    : mediaSegments;
+  const hiddenMediaCount = mediaSegments.length - visibleMedia.length;
 
   return (
     <div className="min-w-0 overflow-hidden">
       {/* Text content with inline mentions and links */}
-      <div className={`whitespace-pre-wrap break-words text-white/90 ${lineClamp}`}>
+      <div 
+        ref={textRef}
+        className={`whitespace-pre-wrap break-words text-white/90 ${lineClamp}`}
+      >
         {inlineSegments.map((segment, i) => {
           switch (segment.type) {
             case "text":
@@ -180,32 +206,76 @@ export function NoteContent({ content, profiles, maxLines = 0 }: NoteContentProp
         })}
       </div>
 
+      {/* Show more/less button for text */}
+      {expandable && showExpandButton && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className="mt-1 text-xs text-neon-blue hover:text-neon-blue/80 transition-colors"
+        >
+          {isExpanded ? "Show less" : "Show more"}
+        </button>
+      )}
+
       {/* Media grid */}
-      {mediaSegments.length > 0 && (
-        <div className={`mt-3 grid gap-2 ${mediaSegments.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
-          {mediaSegments.map((segment, i) => {
+      {visibleMedia.length > 0 && (
+        <div className={`mt-3 grid gap-2 ${visibleMedia.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+          {visibleMedia.map((segment, i) => {
+            const isLastVisible = i === visibleMedia.length - 1;
+            const showOverlay = hiddenMediaCount > 0 && isLastVisible;
+
             if (segment.type === "image") {
               return (
-                <a key={i} href={segment.value} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-xl">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={segment.value}
-                    alt=""
-                    loading="lazy"
-                    className="h-auto max-h-80 w-full rounded-xl border border-white/[0.06] object-cover"
-                  />
-                </a>
+                <div key={i} className="relative overflow-hidden rounded-xl">
+                  <a href={segment.value} target="_blank" rel="noopener noreferrer" className="block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={segment.value}
+                      alt=""
+                      loading="lazy"
+                      className="h-auto max-h-80 w-full rounded-xl border border-white/[0.06] object-cover"
+                    />
+                  </a>
+                  {showOverlay && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsExpanded(!isExpanded);
+                      }}
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 text-white font-medium hover:bg-black/60 transition-colors"
+                    >
+                      +{hiddenMediaCount} more
+                    </button>
+                  )}
+                </div>
               );
             }
             if (segment.type === "video") {
               return (
-                <video
-                  key={i}
-                  src={segment.value}
-                  controls
-                  preload="metadata"
-                  className="h-auto max-h-80 w-full rounded-xl border border-white/[0.06]"
-                />
+                <div key={i} className="relative overflow-hidden rounded-xl">
+                  <video
+                    src={segment.value}
+                    controls
+                    preload="metadata"
+                    className="h-auto max-h-80 w-full rounded-xl border border-white/[0.06]"
+                  />
+                  {showOverlay && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsExpanded(!isExpanded);
+                      }}
+                      className="absolute top-2 right-2 bg-black/50 text-white text-sm px-2 py-1 rounded hover:bg-black/60 transition-colors"
+                    >
+                      +{hiddenMediaCount} more
+                    </button>
+                  )}
+                </div>
               );
             }
             return null;

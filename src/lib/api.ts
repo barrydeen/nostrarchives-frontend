@@ -254,30 +254,30 @@ export async function getRelayLeaderboard(limit = 50, offset = 0) {
 
 // ─── Profile Tabs ───────────────────────────────────────────────────
 
-export async function getProfileNotes(pubkey: string, limit = 20, offset = 0) {
+export async function getProfileNotes(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileNotesResponse>(
-    `/v1/profiles/${pubkey}/notes${buildQuery({ limit, offset })}`,
+    `/v1/profiles/${pubkey}/notes${buildQuery({ limit, offset, sort })}`,
     { revalidate: 60 },
   );
 }
 
-export async function getProfileReplies(pubkey: string, limit = 20, offset = 0) {
+export async function getProfileReplies(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileRepliesResponse>(
-    `/v1/profiles/${pubkey}/replies${buildQuery({ limit, offset })}`,
+    `/v1/profiles/${pubkey}/replies${buildQuery({ limit, offset, sort })}`,
     { revalidate: 60 },
   );
 }
 
-export async function getProfileZapsSent(pubkey: string, limit = 20, offset = 0) {
+export async function getProfileZapsSent(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileZapsSentResponse>(
-    `/v1/profiles/${pubkey}/zaps/sent${buildQuery({ limit, offset })}`,
+    `/v1/profiles/${pubkey}/zaps/sent${buildQuery({ limit, offset, sort })}`,
     { revalidate: 120 },
   );
 }
 
-export async function getProfileZapsReceived(pubkey: string, limit = 20, offset = 0) {
+export async function getProfileZapsReceived(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileZapsReceivedResponse>(
-    `/v1/profiles/${pubkey}/zaps/received${buildQuery({ limit, offset })}`,
+    `/v1/profiles/${pubkey}/zaps/received${buildQuery({ limit, offset, sort })}`,
     { revalidate: 120 },
   );
 }
