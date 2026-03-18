@@ -118,7 +118,7 @@ export function UnifiedNoteCard({
 
   if (variant === "hero") {
     return (
-      <div className={`group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 cursor-pointer ${className}`}>
+      <div className={`group relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-gradient-to-br from-neon-pink/[0.06] via-card/80 to-card/80 p-6 backdrop-blur-xl transition hover:border-white/15 cursor-pointer ${className}`}>
         <CardLink eventId={event.id} />
         <div className="pointer-events-none absolute -right-12 -top-12 size-48 rounded-full bg-neon-pink/[0.04]" />
         <div className="flex items-center justify-between">
@@ -132,7 +132,7 @@ export function UnifiedNoteCard({
           )}
         </div>
         <div className="mt-4 flex-1 text-base leading-relaxed">
-          <NoteContent content={event.content || "—"} profiles={profilesMap} maxLines={effectiveMaxLines} />
+          <NoteContent content={event.content || "—"} profiles={profilesMap} maxLines={effectiveMaxLines} expandable />
         </div>
         {tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
@@ -156,7 +156,7 @@ export function UnifiedNoteCard({
 
   // Default variant
   return (
-    <div className={`relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 cursor-pointer ${className}`}>
+    <div className={`relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-card/70 p-5 backdrop-blur transition hover:border-white/15 cursor-pointer ${className}`}>
       <CardLink eventId={event.id} />
       <div className="flex items-center justify-between">
         <span className="relative z-10">
@@ -168,7 +168,7 @@ export function UnifiedNoteCard({
         </span>
       </div>
       <div className="mt-3 flex-1 text-sm">
-        <NoteContent content={event.content || "—"} profiles={profilesMap} maxLines={effectiveMaxLines} />
+        <NoteContent content={event.content || "—"} profiles={profilesMap} maxLines={effectiveMaxLines} expandable />
       </div>
       {tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
