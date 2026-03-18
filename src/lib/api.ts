@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse, ProfileNotesResponse, ProfileRepliesResponse, ProfileZapsSentResponse, ProfileZapsReceivedResponse, ProfileZapStatsResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse, ProfileNotesResponse, ProfileRepliesResponse, ProfileZapsSentResponse, ProfileZapsReceivedResponse, ProfileZapStatsResponse, TopPostersResponse, MostLikedResponse, MostSharedResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -139,9 +139,9 @@ export async function getNewUsers(limit = 20) {
   return fetchFromApi<NewUsersResponse>(`/v1/users/new${buildQuery({ limit })}`, { revalidate: 30 });
 }
 
-export async function getTopZappers(direction: "sent" | "received" = "received", limit = 10) {
+export async function getTopZappers(direction: "sent" | "received" = "received", limit = 20, range = "7d") {
   return fetchFromApi<TopZappersResponse>(
-    `/v1/users/zappers${buildQuery({ direction, limit })}`,
+    `/v1/users/zappers${buildQuery({ direction, limit, range })}`,
     { revalidate: 30 },
   );
 }
@@ -249,6 +249,29 @@ export async function getRelayLeaderboard(limit = 50, offset = 0) {
   return fetchFromApi<RelayLeaderboardResponse>(
     `/v1/relays/leaderboard${buildQuery({ limit, offset })}`,
     { revalidate: 1800 },
+  );
+}
+
+// ─── Analytics Leaderboards ─────────────────────────────────────────
+
+export async function getTopPosters(range = "7d", limit = 20) {
+  return fetchFromApi<TopPostersResponse>(
+    `/v1/analytics/top-posters${buildQuery({ range, limit })}`,
+    { revalidate: range === "today" ? 300 : 1800 },
+  );
+}
+
+export async function getMostLiked(range = "7d", limit = 20) {
+  return fetchFromApi<MostLikedResponse>(
+    `/v1/analytics/most-liked${buildQuery({ range, limit })}`,
+    { revalidate: range === "today" ? 300 : 1800 },
+  );
+}
+
+export async function getMostShared(range = "7d", limit = 20) {
+  return fetchFromApi<MostSharedResponse>(
+    `/v1/analytics/most-shared${buildQuery({ range, limit })}`,
+    { revalidate: range === "today" ? 300 : 1800 },
   );
 }
 
