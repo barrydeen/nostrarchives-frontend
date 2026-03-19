@@ -5,6 +5,8 @@ import { RelayCard } from "@/components/analytics/RelayCard";
 import { LeaderboardCard } from "@/components/analytics/LeaderboardCard";
 import { AnalyticsChartsWrapper } from "./AnalyticsChartsWrapper";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Analytics",
   description:
