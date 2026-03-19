@@ -3,6 +3,7 @@ import { ExternalLink, Zap } from "lucide-react";
 import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileNotes, getProfileReplies, getProfileZapStats } from "@/lib/api";
 import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ProfileActions } from "@/components/profile/ProfileActions";
 import { formatNumber, truncateHex } from "@/lib/utils";
 import { ProfileMetadataEntry } from "@/lib/types";
 
@@ -64,6 +65,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const bio = profile.about ?? "";
   const nip05 = profile.nip05 as string | undefined;
   const picture = typeof profile.picture === "string" ? profile.picture : undefined;
+  const lightningAddress = (profile.lud16 as string | undefined) || null;
 
   const zapsSentSats = zapStats?.sent?.total_sats ?? 0;
   const zapsReceivedSats = zapStats?.received?.total_sats ?? 0;
@@ -129,6 +131,9 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             <TruncatedBio text={bio} maxLines={2} />
           </div>
         )}
+
+        {/* Action buttons: Keys/QR, Open in App, Share, Lightning */}
+        <ProfileActions pubkey={pubkey} lightningAddress={lightningAddress} />
       </section>
 
       {/* ── Tabbed Content ── */}
