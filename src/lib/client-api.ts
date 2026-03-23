@@ -29,7 +29,7 @@ export async function fetchTrendingUsers(limit = 12) {
   return fetchJson<TrendingUsersResponse>(`${API_BASE_URL}/v1/users/trending?limit=${limit}`);
 }
 
-export async function fetchTopZappers(direction: "sent" | "received", limit = 12, range = "7d") {
+export async function fetchTopZappers(direction: "sent" | "received", limit = 12, range = "today") {
   return fetchJson<TopZappersResponse>(`${API_BASE_URL}/v1/users/zappers?direction=${direction}&limit=${limit}&range=${range}`);
 }
 
