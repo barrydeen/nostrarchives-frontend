@@ -64,12 +64,15 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
     : r === "30d" ? 86400_000       // 1 day
     :               604800_000;     // 1 week (1y, all)
 
-  // Seed cache with initial data
+  // Seed cache with initial data, or fetch on mount if none provided
   useEffect(() => {
     if (initialData) {
       cache.current.set(`${initialMetric}:${initialRange}`, { data: initialData, ts: Date.now() });
+    } else {
+      fetchData(initialMetric, initialRange);
     }
-  }, [initialData, initialMetric, initialRange]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchData = useCallback(async (m: TrendingMetric, r: TrendingRange) => {
     const cacheKey = `${m}:${r}`;
