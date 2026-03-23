@@ -22,13 +22,13 @@ function buildQuery(params: Record<string, string | number | undefined>) {
   return qs ? `?${qs}` : "";
 }
 
-async function fetchFromApi<T>(path: string, options?: { revalidate?: number }) {
+async function fetchFromApi<T>(path: string) {
   const url = `${API_BASE_URL}${path}`;
 
   try {
     const res = await fetch(url, {
       headers: { Accept: "application/json" },
-      next: { revalidate: options?.revalidate ?? 30 },
+      cache: "no-store",
     });
     return await handleResponse<T>(res);
   } catch (error) {
@@ -38,13 +38,12 @@ async function fetchFromApi<T>(path: string, options?: { revalidate?: number }) 
 }
 
 export const getGlobalStats = cache(async () => {
-  return fetchFromApi<StatsResponse>("/v1/stats", { revalidate: 30 });
+  return fetchFromApi<StatsResponse>("/v1/stats");
 });
 
 export async function getTopNotes(metric: "likes" | "zaps", range: "all_time" | "today", limit = 6) {
   const path = `/v1/notes/${metric}/top${range === "today" ? "/today" : ""}${buildQuery({ limit })}`;
-  const revalidate = range === "today" ? 1800 : 604800;
-  return fetchFromApi<TopNotesResponse>(path, { revalidate });
+  return fetchFromApi<TopNotesResponse>(path);
 }
 
 /** Unified trending endpoint: metric × range with profiles included. */
@@ -54,15 +53,8 @@ export async function getTopNotesUnified(
   limit = 20,
   offset = 0,
 ) {
-  // Aggressive caching — these feeds don't need to be real-time
-  const revalidate =
-    range === "today" ? 1800      // 30 min
-    : range === "7d"  ? 10800     // 3 hours
-    : range === "30d" ? 86400     // 1 day
-    :                   604800;   // 1 week (1y, all)
   return fetchFromApi<TopNotesUnifiedResponse>(
     `/v1/notes/top${buildQuery({ metric, range, limit, offset })}`,
-    { revalidate },
   );
 }
 
@@ -80,28 +72,28 @@ export async function getRecentEvents(params?: {
     search: params?.search,
     since: params?.since,
   });
-  return fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`, { revalidate: 10 });
+  return fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`);
 }
 
 export async function getEventById(id: string) {
-  return fetchFromApi<StoredEvent>(`/v1/events/${id}`, { revalidate: 30 });
+  return fetchFromApi<StoredEvent>(`/v1/events/${id}`);
 }
 
 export async function getEventThread(id: string) {
-  return fetchFromApi<ThreadResponse>(`/v1/events/${id}/thread`, { revalidate: 30 });
+  return fetchFromApi<ThreadResponse>(`/v1/events/${id}/thread`);
 }
 
 /** Fetch everything the note detail page needs in a single API call. */
 export async function getNoteDetail(id: string) {
-  return fetchFromApi<NoteDetailResponse>(`/v1/pages/note/${id}`, { revalidate: 30 });
+  return fetchFromApi<NoteDetailResponse>(`/v1/pages/note/${id}`);
 }
 
 export async function getEventInteractions(id: string) {
-  return fetchFromApi<InteractionResponse>(`/v1/events/${id}/interactions`, { revalidate: 30 });
+  return fetchFromApi<InteractionResponse>(`/v1/events/${id}/interactions`);
 }
 
 export async function getSocialGraph(pubkey: string) {
-  return fetchFromApi<SocialResponse>(`/v1/social/${pubkey}`, { revalidate: 60 });
+  return fetchFromApi<SocialResponse>(`/v1/social/${pubkey}`);
 }
 
 /** Bulk-fetch profile metadata for up to 500 pubkeys. */
@@ -118,7 +110,7 @@ export async function getBulkProfileMetadata(pubkeys: string[]): Promise<Map<str
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({ pubkeys: unique }),
-      next: { revalidate: 300 },
+      cache: "no-store",
     });
     const data = await handleResponse<ProfilesMetadataResponse>(res);
     for (const profile of data.profiles) {
@@ -132,26 +124,25 @@ export async function getBulkProfileMetadata(pubkeys: string[]): Promise<Map<str
 }
 
 export async function getTrendingNotes(limit = 20) {
-  return fetchFromApi<TrendingNotesResponse>(`/v1/notes/trending${buildQuery({ limit })}`, { revalidate: 15 });
+  return fetchFromApi<TrendingNotesResponse>(`/v1/notes/trending${buildQuery({ limit })}`);
 }
 
 export async function getNewUsers(limit = 20) {
-  return fetchFromApi<NewUsersResponse>(`/v1/users/new${buildQuery({ limit })}`, { revalidate: 30 });
+  return fetchFromApi<NewUsersResponse>(`/v1/users/new${buildQuery({ limit })}`);
 }
 
 export async function getTopZappers(direction: "sent" | "received" = "received", limit = 20, range = "7d") {
   return fetchFromApi<TopZappersResponse>(
     `/v1/users/zappers${buildQuery({ direction, limit, range })}`,
-    { revalidate: 30 },
   );
 }
 
 export async function getTrendingUsers(limit = 20) {
-  return fetchFromApi<TrendingUsersResponse>(`/v1/users/trending${buildQuery({ limit })}`, { revalidate: 86400 });
+  return fetchFromApi<TrendingUsersResponse>(`/v1/users/trending${buildQuery({ limit })}`);
 }
 
 export const getDailyStats = cache(async () => {
-  return fetchFromApi<DailyStatsResponse>("/v1/stats/daily", { revalidate: 30 });
+  return fetchFromApi<DailyStatsResponse>("/v1/stats/daily");
 });
 
 // ─── Search ─────────────────────────────────────────────────────────
@@ -163,7 +154,7 @@ export async function search(
   offset = 0,
 ) {
   const query = buildQuery({ q, type, limit, offset });
-  return fetchFromApi<SearchResponse>(`/v1/search${query}`, { revalidate: 5 });
+  return fetchFromApi<SearchResponse>(`/v1/search${query}`);
 }
 
 export async function searchSuggest(q: string, limit = 5) {
@@ -186,12 +177,12 @@ export async function advancedNoteSearch(params: {
   offset?: number;
 }) {
   const query = buildQuery(params);
-  return fetchFromApi<AdvancedSearchResponse>(`/v1/notes/search${query}`, { revalidate: 10 });
+  return fetchFromApi<AdvancedSearchResponse>(`/v1/notes/search${query}`);
 }
 
 export async function getProfileMetadata(pubkey: string) {
   const query = buildQuery({ pubkey, kind: 0, limit: 1 });
-  const response = await fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`, { revalidate: 300 });
+  const response = await fetchFromApi<EventsResponse | StoredEvent[]>(`/v1/events${query}`);
 
   if (!response) return null;
 
@@ -212,7 +203,6 @@ export async function getProfileMetadata(pubkey: string) {
 export async function getTrendingHashtags(limit = 20) {
   return fetchFromApi<TrendingHashtagsResponse>(
     `/v1/hashtags/trending${buildQuery({ limit })}`,
-    { revalidate: 600 },
   );
 }
 
@@ -221,7 +211,6 @@ export async function getHashtagNotes(hashtag: string, limit = 30, offset = 0) {
   if (!tag) return null;
   return fetchFromApi<HashtagNotesResponse>(
     `/v1/hashtags/${encodeURIComponent(tag)}/notes${buildQuery({ limit, offset })}`,
-    { revalidate: 60 },
   );
 }
 
@@ -230,7 +219,6 @@ export async function getHashtagNotes(hashtag: string, limit = 30, offset = 0) {
 export async function getDailyAnalytics(days = 30) {
   return fetchFromApi<DailyAnalyticsResponse>(
     `/v1/analytics/daily${buildQuery({ days })}`,
-    { revalidate: 3600 },
   );
 }
 
@@ -239,7 +227,6 @@ export async function getDailyAnalytics(days = 30) {
 export async function getClientLeaderboard(limit = 50, offset = 0) {
   return fetchFromApi<ClientLeaderboardResponse>(
     `/v1/clients/leaderboard${buildQuery({ limit, offset })}`,
-    { revalidate: 600 },
   );
 }
 
@@ -248,7 +235,6 @@ export async function getClientLeaderboard(limit = 50, offset = 0) {
 export async function getRelayLeaderboard(limit = 50, offset = 0) {
   return fetchFromApi<RelayLeaderboardResponse>(
     `/v1/relays/leaderboard${buildQuery({ limit, offset })}`,
-    { revalidate: 1800 },
   );
 }
 
@@ -257,21 +243,18 @@ export async function getRelayLeaderboard(limit = 50, offset = 0) {
 export async function getTopPosters(range = "7d", limit = 20) {
   return fetchFromApi<TopPostersResponse>(
     `/v1/analytics/top-posters${buildQuery({ range, limit })}`,
-    { revalidate: range === "today" ? 300 : 1800 },
   );
 }
 
 export async function getMostLiked(range = "7d", limit = 20) {
   return fetchFromApi<MostLikedResponse>(
     `/v1/analytics/most-liked${buildQuery({ range, limit })}`,
-    { revalidate: range === "today" ? 300 : 1800 },
   );
 }
 
 export async function getMostShared(range = "7d", limit = 20) {
   return fetchFromApi<MostSharedResponse>(
     `/v1/analytics/most-shared${buildQuery({ range, limit })}`,
-    { revalidate: range === "today" ? 300 : 1800 },
   );
 }
 
@@ -280,34 +263,29 @@ export async function getMostShared(range = "7d", limit = 20) {
 export async function getProfileNotes(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileNotesResponse>(
     `/v1/profiles/${pubkey}/notes${buildQuery({ limit, offset, sort })}`,
-    { revalidate: 60 },
   );
 }
 
 export async function getProfileReplies(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileRepliesResponse>(
     `/v1/profiles/${pubkey}/replies${buildQuery({ limit, offset, sort })}`,
-    { revalidate: 60 },
   );
 }
 
 export async function getProfileZapsSent(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileZapsSentResponse>(
     `/v1/profiles/${pubkey}/zaps/sent${buildQuery({ limit, offset, sort })}`,
-    { revalidate: 120 },
   );
 }
 
 export async function getProfileZapsReceived(pubkey: string, limit = 20, offset = 0, sort = "recent") {
   return fetchFromApi<ProfileZapsReceivedResponse>(
     `/v1/profiles/${pubkey}/zaps/received${buildQuery({ limit, offset, sort })}`,
-    { revalidate: 120 },
   );
 }
 
 export async function getProfileZapStats(pubkey: string) {
   return fetchFromApi<ProfileZapStatsResponse>(
     `/v1/profiles/${pubkey}/zap-stats`,
-    { revalidate: 300 },
   );
 }
