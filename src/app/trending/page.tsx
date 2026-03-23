@@ -1,8 +1,5 @@
-import { Suspense } from "react";
-import { getTopNotesUnified } from "@/lib/api";
 import { TrendingMetric, TrendingRange } from "@/lib/types";
 import { TrendingContent } from "@/components/trending/TrendingContent";
-import { SkeletonNoteGrid } from "@/components/layout/Skeleton";
 
 const VALID_METRICS = new Set(["reactions", "replies", "reposts", "zaps"]);
 const VALID_RANGES = new Set(["today", "7d", "30d", "1y", "all"]);
@@ -23,8 +20,6 @@ export default async function TrendingPage({ searchParams }: TrendingPageProps) 
     ? (rawRange as TrendingRange)
     : "today";
 
-  const data = await getTopNotesUnified(metric, range, 20);
-
   return (
     <div className="space-y-6">
       <div>
@@ -34,13 +29,11 @@ export default async function TrendingPage({ searchParams }: TrendingPageProps) 
         </p>
       </div>
 
-      <Suspense fallback={<SkeletonNoteGrid count={6} />}>
-        <TrendingContent
-          initialData={data}
-          initialMetric={metric}
-          initialRange={range}
-        />
-      </Suspense>
+      <TrendingContent
+        initialData={null}
+        initialMetric={metric}
+        initialRange={range}
+      />
     </div>
   );
 }
