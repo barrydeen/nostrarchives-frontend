@@ -22,7 +22,6 @@ interface TabDef {
 interface ProfileTabsProps {
   pubkey: string;
   initialNotes: StoredEvent[];
-  initialNotesTotal: number;
   initialProfiles: Map<string, ProfileMetadataEntry>;
   followsPubkeys: string[];
   followsCount: number;
@@ -47,7 +46,6 @@ function profileMapToMetadataMap(pm: ProfileMap): Map<string, ProfileMetadataEnt
 export function ProfileTabs({
   pubkey,
   initialNotes,
-  initialNotesTotal,
   initialProfiles,
   followsPubkeys,
   followsCount,
@@ -74,12 +72,10 @@ export function ProfileTabs({
 
   // Notes state (pre-loaded)
   const [notes, setNotes] = useState(initialNotes);
-  const [notesTotal, setNotesTotal] = useState(initialNotesTotal);
   const [notesProfiles, setNotesProfiles] = useState(initialProfiles);
 
   // Replies state
   const [replies, setReplies] = useState<StoredEvent[]>([]);
-  const [repliesTotal, setRepliesTotal] = useState(0);
   const [repliesProfiles, setRepliesProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
   const [repliesLoaded, setRepliesLoaded] = useState(false);
 
@@ -163,11 +159,9 @@ export function ProfileTabs({
 
       if (tab === "notes") {
         setNotes(data.events || []);
-        setNotesTotal(data.total || 0);
         setNotesProfiles(profileMapToMetadataMap(data.profiles || {}));
       } else if (tab === "replies") {
         setReplies(data.events || []);
-        setRepliesTotal(data.total || 0);
         setRepliesProfiles(profileMapToMetadataMap(data.profiles || {}));
         setRepliesLoaded(true);
       } else if (tab === "zaps_sent") {
@@ -247,19 +241,17 @@ export function ProfileTabs({
       ) : (
         <>
           {activeTab === "notes" && (
-            <EventGrid 
-              events={notes} 
-              total={notesTotal} 
-              profiles={notesProfiles} 
+            <EventGrid
+              events={notes}
+              profiles={notesProfiles}
               onSortChange={handleNotesSort}
               currentSort={notesSort}
             />
           )}
           {activeTab === "replies" && (
-            <EventGrid 
-              events={replies} 
-              total={repliesTotal} 
-              profiles={repliesProfiles} 
+            <EventGrid
+              events={replies}
+              profiles={repliesProfiles}
               onSortChange={handleRepliesSort}
               currentSort={repliesSort}
             />
@@ -306,9 +298,8 @@ export function ProfileTabs({
   );
 }
 
-function EventGrid({ events, total, profiles, onSortChange, currentSort }: {
+function EventGrid({ events, profiles, onSortChange, currentSort }: {
   events: StoredEvent[];
-  total: number;
   profiles: Map<string, ProfileMetadataEntry>;
   onSortChange?: (sort: string) => void;
   currentSort?: string;
@@ -319,9 +310,8 @@ function EventGrid({ events, total, profiles, onSortChange, currentSort }: {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-white/30">{total.toLocaleString()} total</span>
-        {onSortChange && (
+      {onSortChange && (
+        <div className="flex items-center justify-end mb-3">
           <select
             value={currentSort || "recent"}
             onChange={(e) => onSortChange(e.target.value)}
@@ -332,8 +322,8 @@ function EventGrid({ events, total, profiles, onSortChange, currentSort }: {
             <option value="zaps">Most Zapped</option>
             <option value="reposts">Most Reposted</option>
           </select>
-        )}
-      </div>
+        </div>
+      )}
       <div className="columns-1 md:columns-2 gap-3 space-y-3">
         {events.map((event) => (
           <div key={event.id} className="break-inside-avoid">
