@@ -77,16 +77,18 @@ export default function AdminPage() {
 function BlockedPubkeysPanel() {
   const [items, setItems] = useState<BlockedEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newValue, setNewValue] = useState("");
   const [newReason, setNewReason] = useState("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
+      setError(null);
       const res = await adminApi.listBlockedPubkeys();
       setItems(res.blocked_pubkeys);
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load blocked pubkeys");
     } finally {
       setLoading(false);
     }
@@ -151,6 +153,8 @@ function BlockedPubkeysPanel() {
 
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
+      ) : error ? (
+        <p className="text-sm text-red-400">{error}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-white/40">No blocked pubkeys.</p>
       ) : (
@@ -185,16 +189,18 @@ function BlockedPubkeysPanel() {
 function BlockedHashtagsPanel() {
   const [items, setItems] = useState<BlockedEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newValue, setNewValue] = useState("");
   const [newReason, setNewReason] = useState("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
+      setError(null);
       const res = await adminApi.listBlockedHashtags();
       setItems(res.blocked_hashtags);
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load blocked hashtags");
     } finally {
       setLoading(false);
     }
@@ -259,6 +265,8 @@ function BlockedHashtagsPanel() {
 
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
+      ) : error ? (
+        <p className="text-sm text-red-400">{error}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-white/40">No blocked hashtags.</p>
       ) : (
@@ -286,16 +294,18 @@ function BlockedHashtagsPanel() {
 function BlockedSearchTermsPanel() {
   const [items, setItems] = useState<BlockedEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newValue, setNewValue] = useState("");
   const [newReason, setNewReason] = useState("");
   const [adding, setAdding] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
+      setError(null);
       const res = await adminApi.listBlockedSearchTerms();
       setItems(res.blocked_search_terms);
-    } catch {
-      // ignore
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load blocked search terms");
     } finally {
       setLoading(false);
     }
@@ -360,6 +370,8 @@ function BlockedSearchTermsPanel() {
 
       {loading ? (
         <p className="text-sm text-white/40">Loading…</p>
+      ) : error ? (
+        <p className="text-sm text-red-400">{error}</p>
       ) : items.length === 0 ? (
         <p className="text-sm text-white/40">No blocked search terms.</p>
       ) : (

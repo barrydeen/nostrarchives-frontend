@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Hash, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { TrendingHashtag } from "@/lib/types";
@@ -13,6 +14,9 @@ interface TrendingHashtagsProps {
 
 export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
   const { isAdmin } = useAuth();
+  const [blockedTags, setBlockedTags] = useState<Set<string>>(new Set());
+  const visibleHashtags = hashtags.filter((t) => !blockedTags.has(t.hashtag));
+
   return (
     <section>
       <div className="mb-6 flex items-center gap-3">
@@ -25,11 +29,11 @@ export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
         </div>
       </div>
 
-      {!hashtags.length ? (
+      {!visibleHashtags.length ? (
         <p className="text-sm text-white/40">No trending hashtags right now.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {hashtags.map((tag, index) => (
+          {visibleHashtags.map((tag, index) => (
             <div key={tag.hashtag} className="flex items-center gap-0.5">
               <Link
                 href={`/search?q=%23${encodeURIComponent(tag.hashtag)}`}
@@ -55,6 +59,7 @@ export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
                     if (!confirm(`Block #${tag.hashtag} from trending?`)) return;
                     try {
                       await adminApi.blockHashtag(tag.hashtag);
+                      setBlockedTags((prev) => new Set(prev).add(tag.hashtag));
                     } catch (err) {
                       alert(err instanceof Error ? err.message : "Block failed");
                     }
