@@ -40,6 +40,24 @@ export async function getPublicKey(): Promise<string> {
 }
 
 /**
+ * Verify the user actually controls the private key by signing a
+ * challenge event. Returns the pubkey from the signed event.
+ * This forces the extension to prompt for approval, proving ownership.
+ */
+export async function verifyKeyOwnership(): Promise<string> {
+  if (!window.nostr) throw new Error("No Nostr extension found");
+
+  const signed = await window.nostr.signEvent({
+    kind: 22242,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [["challenge", crypto.randomUUID()]],
+    content: "nostrarchives.com login",
+  });
+
+  return signed.pubkey;
+}
+
+/**
  * Create a NIP-98 Authorization header value.
  * Signs a kind-27235 event with the browser extension containing
  * the target URL and HTTP method.

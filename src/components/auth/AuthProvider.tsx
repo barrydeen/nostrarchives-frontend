@@ -9,7 +9,7 @@ import {
 } from "react";
 import {
   hasNostrExtension,
-  getPublicKey,
+  verifyKeyOwnership,
   createNip98AuthHeader,
 } from "@/lib/nostr-auth";
 
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const checkAdmin = useCallback(async (pk: string): Promise<boolean> => {
+  const checkAdmin = useCallback(async (): Promise<boolean> => {
     try {
       const url = `${API_BASE_URL}/v1/admin/check-auth`;
       const authHeader = await createNip98AuthHeader(url, "GET");
@@ -60,27 +60,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Restore session on mount — re-verify pubkey with the extension
+  // Restore session on mount — require signature to prove ownership
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && hasNostrExtension()) {
-      // Re-verify the stored pubkey matches what the extension currently has
-      getPublicKey()
-        .then((extensionPk) => {
-          if (extensionPk !== stored) {
-            // Extension key changed — clear stale session
+      // Re-verify ownership by signing a challenge
+      verifyKeyOwnership()
+        .then((verifiedPk) => {
+          if (verifiedPk !== stored) {
+            // Key changed or mismatch — clear stale session
             localStorage.removeItem(STORAGE_KEY);
             setLoading(false);
             return;
           }
-          setPubkey(extensionPk);
-          return checkAdmin(extensionPk).then((admin) => {
+          setPubkey(verifiedPk);
+          return checkAdmin().then((admin) => {
             setIsAdmin(admin);
             setLoading(false);
           });
         })
         .catch(() => {
-          // Extension refused or unavailable — clear stale session
+          // User declined or extension unavailable — clear session
           localStorage.removeItem(STORAGE_KEY);
           setLoading(false);
         });
@@ -96,11 +96,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
     }
 
-    const pk = await getPublicKey();
+    // Sign a challenge event to prove the user owns the private key
+    const pk = await verifyKeyOwnership();
     setPubkey(pk);
     localStorage.setItem(STORAGE_KEY, pk);
 
-    const admin = await checkAdmin(pk);
+    const admin = await checkAdmin();
     setIsAdmin(admin);
   }, [checkAdmin]);
 
