@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Send, Loader2, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { Send, Loader2, CheckCircle, AlertCircle, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import {
   getOutboxRelays,
   publishEvent,
   signEvent,
 } from "@/lib/nostr-relay";
+import type { StoredEvent } from "@/lib/types";
 
 interface ReplyComposerProps {
   /** The event being replied to */
@@ -16,19 +17,28 @@ interface ReplyComposerProps {
   eventPubkey: string;
   /** Root event ID of the thread (null if this event IS the root) */
   rootId: string | null;
+  /** Callback when a reply is successfully published */
+  onPublished?: (event: StoredEvent) => void;
+  /** Compact inline variant for thread replies */
+  inline?: boolean;
+  /** Called when the inline composer is dismissed */
+  onCancel?: () => void;
 }
 
 type PublishState =
   | { status: "idle" }
   | { status: "signing" }
   | { status: "publishing"; relayCount: number }
-  | { status: "success"; successes: number; failures: number; relays: string[] }
+  | { status: "success"; successes: number; failures: number }
   | { status: "error"; message: string };
 
 export function ReplyComposer({
   eventId,
   eventPubkey,
   rootId,
+  onPublished,
+  inline,
+  onCancel,
 }: ReplyComposerProps) {
   const { pubkey } = useAuth();
   const [content, setContent] = useState("");
@@ -38,25 +48,22 @@ export function ReplyComposer({
     if (!pubkey || !content.trim()) return;
 
     try {
-      // Step 1: Compute outbox model relays
       setState({ status: "signing" });
 
       const relays = await getOutboxRelays(pubkey, eventPubkey);
 
-      // Step 2: Build the reply event (NIP-10 tagged)
+      // Build the reply event (NIP-10 tagged)
       const tags: string[][] = [];
 
-      // Root tag: if replying to a reply, use the thread root; otherwise this event is root
       const actualRootId = rootId || eventId;
       tags.push(["e", actualRootId, "", "root"]);
 
-      // Reply tag: always points to the event we're replying to
       if (eventId !== actualRootId) {
         tags.push(["e", eventId, "", "reply"]);
       }
 
-      // Tag the author of the note we're replying to
       tags.push(["p", eventPubkey]);
+      tags.push(["client", "NostrArchives.com"]);
 
       const template = {
         kind: 1,
@@ -65,10 +72,8 @@ export function ReplyComposer({
         content: content.trim(),
       };
 
-      // Step 3: Sign via NIP-07 extension
       const signed = await signEvent(template);
 
-      // Step 4: Publish to outbox model relays
       setState({ status: "publishing", relayCount: relays.length });
       const result = await publishEvent(relays, signed);
 
@@ -77,11 +82,21 @@ export function ReplyComposer({
           status: "success",
           successes: result.successes.length,
           failures: result.failures.length,
-          relays: result.successes,
         });
+
+        // Notify parent with the signed event as a StoredEvent
+        onPublished?.({
+          id: (signed as any).id,
+          pubkey: (signed as any).pubkey,
+          created_at: signed.created_at,
+          kind: signed.kind,
+          content: signed.content,
+          tags: signed.tags as [string, ...string[]][],
+          sig: (signed as any).sig,
+        });
+
         setContent("");
-        // Reset to idle after a few seconds
-        setTimeout(() => setState({ status: "idle" }), 5000);
+        setTimeout(() => setState({ status: "idle" }), 3000);
       } else {
         const errorMsg = result.failures
           .map((f) => `${f.relay}: ${f.error}`)
@@ -96,14 +111,65 @@ export function ReplyComposer({
         err instanceof Error ? err.message : "Failed to publish reply";
       setState({ status: "error", message });
     }
-  }, [pubkey, content, eventId, eventPubkey, rootId]);
+  }, [pubkey, content, eventId, eventPubkey, rootId, onPublished]);
 
-  // Don't render if not logged in
-  if (!pubkey) {
-    return null;
-  }
+  if (!pubkey) return null;
 
   const isSubmitting = state.status === "signing" || state.status === "publishing";
+
+  if (inline) {
+    return (
+      <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="flex items-start gap-2">
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write your reply..."
+            disabled={isSubmitting}
+            rows={2}
+            autoFocus
+            className="min-h-[2.5rem] flex-1 resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition focus:border-white/20 disabled:opacity-50"
+          />
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting || !content.trim()}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3" />
+              )}
+              Send
+            </button>
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                className="flex cursor-pointer items-center gap-1 rounded-full px-3 py-1.5 text-xs text-white/40 transition hover:text-white/60"
+              >
+                <X className="h-3 w-3" />
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Inline status */}
+        {state.status === "success" && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-green-400/80">
+            <CheckCircle className="h-3 w-3" />
+            Published to {state.successes} relay{state.successes !== 1 ? "s" : ""}
+          </p>
+        )}
+        {state.status === "error" && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-red-400/80">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            <span className="truncate">{state.message}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-[32px] border border-white/10 bg-card/70 p-6 shadow-2xl">
@@ -119,7 +185,6 @@ export function ReplyComposer({
       />
 
       <div className="mt-3 flex items-center justify-between gap-3">
-        {/* Status messages */}
         <div className="min-w-0 flex-1 text-sm">
           {state.status === "signing" && (
             <span className="flex items-center gap-2 text-white/50">
@@ -152,7 +217,6 @@ export function ReplyComposer({
           )}
         </div>
 
-        {/* Submit button */}
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !content.trim()}
@@ -166,14 +230,6 @@ export function ReplyComposer({
           Send Reply
         </button>
       </div>
-
-      {/* Info about outbox model */}
-      {state.status === "idle" && (
-        <p className="mt-3 flex items-start gap-1.5 text-xs text-white/30">
-          <Info className="mt-0.5 h-3 w-3 shrink-0" />
-          Your reply will be signed with your browser extension and published to your outbox relays and the author&apos;s inbox relays.
-        </p>
-      )}
     </div>
   );
 }

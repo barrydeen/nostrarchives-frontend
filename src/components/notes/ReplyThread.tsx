@@ -1,5 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import { MessageCircle } from "lucide-react";
 import { StoredEvent, ProfileMetadataEntry } from "@/lib/types";
 import { UnifiedNoteCard } from "./UnifiedNoteCard";
+import { ReplyComposer } from "./ReplyComposer";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export interface ReplyNode {
   event: StoredEvent;
@@ -82,47 +88,111 @@ export function buildReplyTree(
 interface ReplyThreadProps {
   nodes: ReplyNode[];
   profiles: Map<string, ProfileMetadataEntry>;
+  /** Root event ID of the entire thread (for NIP-10 tagging) */
+  rootEventId: string;
+  /** Called when a reply is published anywhere in the thread */
+  onReplyPublished?: (event: StoredEvent, parentId: string) => void;
   depth?: number;
 }
 
 const MAX_DEPTH = 8;
 
-export function ReplyThread({ nodes, profiles, depth = 0 }: ReplyThreadProps) {
+function ReplyNodeItem({
+  node,
+  profiles,
+  rootEventId,
+  onReplyPublished,
+  depth,
+}: {
+  node: ReplyNode;
+  profiles: Map<string, ProfileMetadataEntry>;
+  rootEventId: string;
+  onReplyPublished?: (event: StoredEvent, parentId: string) => void;
+  depth: number;
+}) {
+  const { pubkey } = useAuth();
+  const [showComposer, setShowComposer] = useState(false);
+
+  return (
+    <div className="mt-3 first:mt-0">
+      <UnifiedNoteCard
+        event={node.event}
+        profile={profiles.get(node.event.pubkey)}
+        profiles={profiles}
+        variant="compact"
+      />
+      {/* Reply button */}
+      {pubkey && (
+        <button
+          onClick={() => setShowComposer((v) => !v)}
+          className="mt-1 flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-xs text-white/30 transition hover:bg-white/5 hover:text-white/50"
+        >
+          <MessageCircle className="h-3 w-3" />
+          Reply
+        </button>
+      )}
+      {/* Inline composer */}
+      {showComposer && (
+        <ReplyComposer
+          eventId={node.event.id}
+          eventPubkey={node.event.pubkey}
+          rootId={rootEventId}
+          inline
+          onCancel={() => setShowComposer(false)}
+          onPublished={(event) => {
+            onReplyPublished?.(event, node.event.id);
+            setShowComposer(false);
+          }}
+        />
+      )}
+      {/* Children */}
+      {node.children.length > 0 && depth < MAX_DEPTH && (
+        <ReplyThread
+          nodes={node.children}
+          profiles={profiles}
+          rootEventId={rootEventId}
+          onReplyPublished={onReplyPublished}
+          depth={depth + 1}
+        />
+      )}
+      {node.children.length > 0 && depth >= MAX_DEPTH && (
+        <div className="mt-3">
+          {node.children.map((child) => (
+            <ReplyNodeItem
+              key={child.event.id}
+              node={{ event: child.event, children: [] }}
+              profiles={profiles}
+              rootEventId={rootEventId}
+              onReplyPublished={onReplyPublished}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ReplyThread({
+  nodes,
+  profiles,
+  rootEventId,
+  onReplyPublished,
+  depth = 0,
+}: ReplyThreadProps) {
   if (nodes.length === 0) return null;
 
   return (
     <div className={depth > 0 ? "ml-6 border-l border-white/[0.08] pl-4" : ""}>
       {nodes.map((node) => (
-        <div key={node.event.id} className="mt-3 first:mt-0">
-          <UnifiedNoteCard
-            event={node.event}
-            profile={profiles.get(node.event.pubkey)}
-            profiles={profiles}
-            variant="compact"
-          />
-          {node.children.length > 0 && depth < MAX_DEPTH && (
-            <ReplyThread
-              nodes={node.children}
-              profiles={profiles}
-              depth={depth + 1}
-            />
-          )}
-          {/* Flatten deeply nested replies beyond MAX_DEPTH */}
-          {node.children.length > 0 && depth >= MAX_DEPTH && (
-            <div className="mt-3">
-              {node.children.map((child) => (
-                <div key={child.event.id} className="mt-3">
-                  <UnifiedNoteCard
-                    event={child.event}
-                    profile={profiles.get(child.event.pubkey)}
-                    profiles={profiles}
-                    variant="compact"
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ReplyNodeItem
+          key={node.event.id}
+          node={node}
+          profiles={profiles}
+          rootEventId={rootEventId}
+          onReplyPublished={onReplyPublished}
+          depth={depth}
+        />
       ))}
     </div>
   );

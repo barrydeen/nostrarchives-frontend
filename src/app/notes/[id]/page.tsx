@@ -3,8 +3,7 @@ import { notFound } from "next/navigation";
 import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
 import { InteractionTabs } from "@/components/notes/InteractionTabs";
-import { ReplyThread, buildReplyTree } from "@/components/notes/ReplyThread";
-import { ReplyComposer } from "@/components/notes/ReplyComposer";
+import { NoteRepliesSection } from "@/components/notes/NoteRepliesSection";
 import { getNoteDetail, getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
 import { formatRelative } from "@/lib/utils";
@@ -172,27 +171,14 @@ export default async function NotePage({ params }: NotePageProps) {
         </section>
       )}
 
-      {/* Reply composer */}
-      <ReplyComposer
+      {/* Reply composer + replies (client component for live updates) */}
+      <NoteRepliesSection
         eventId={event.id}
         eventPubkey={event.pubkey}
         rootId={detail.root_id}
+        initialReplies={replies}
+        profilesRecord={Object.fromEntries(profiles)}
       />
-
-      {/* Replies */}
-      <section className="rounded-[32px] border border-white/10 bg-surface/70 p-6 shadow-2xl">
-        <h2 className="text-lg font-semibold text-white/80">Replies ({replies.length})</h2>
-        <div className="mt-4">
-          {replies.length > 0 ? (
-            <ReplyThread
-              nodes={buildReplyTree(replies, id)}
-              profiles={profiles}
-            />
-          ) : (
-            <p className="text-sm text-white/60">No replies yet.</p>
-          )}
-        </div>
-      </section>
     </div>
   );
 }
