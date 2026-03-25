@@ -60,16 +60,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Restore session on mount
+  // Restore session on mount — re-verify pubkey with the extension
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && hasNostrExtension()) {
-      setPubkey(stored);
-      // Re-verify admin status
-      checkAdmin(stored).then((admin) => {
-        setIsAdmin(admin);
-        setLoading(false);
-      });
+      // Re-verify the stored pubkey matches what the extension currently has
+      getPublicKey()
+        .then((extensionPk) => {
+          if (extensionPk !== stored) {
+            // Extension key changed — clear stale session
+            localStorage.removeItem(STORAGE_KEY);
+            setLoading(false);
+            return;
+          }
+          setPubkey(extensionPk);
+          return checkAdmin(extensionPk).then((admin) => {
+            setIsAdmin(admin);
+            setLoading(false);
+          });
+        })
+        .catch(() => {
+          // Extension refused or unavailable — clear stale session
+          localStorage.removeItem(STORAGE_KEY);
+          setLoading(false);
+        });
     } else {
       setLoading(false);
     }
