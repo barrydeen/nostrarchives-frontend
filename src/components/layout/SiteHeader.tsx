@@ -2,14 +2,91 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Radio, Search, X } from "lucide-react";
+import { Radio, Search, X, LogIn, LogOut, Shield, ChevronDown } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { nip19 } from "nostr-tools";
 
 const navItems = [
   { href: "/explore", label: "Explore" },
   { href: "/trending", label: "Trending" },
   { href: "/analytics", label: "Analytics" },
 ];
+
+function AuthButton() {
+  const { pubkey, isAdmin, loading, login, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (loading) return null;
+
+  if (!pubkey) {
+    return (
+      <button
+        onClick={async () => {
+          try {
+            setError(null);
+            await login();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "Login failed");
+          }
+        }}
+        className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+        title={error || "Login with Nostr extension"}
+      >
+        <LogIn className="size-3.5" />
+        <span className="hidden sm:inline">Login</span>
+      </button>
+    );
+  }
+
+  const npub = nip19.npubEncode(pubkey);
+  const shortNpub = `${npub.slice(0, 8)}…${npub.slice(-4)}`;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setDropdownOpen(!dropdownOpen)}
+        className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+      >
+        {isAdmin && <Shield className="size-3.5 text-neon-pink" />}
+        <span className="hidden sm:inline">{shortNpub}</span>
+        <ChevronDown className="size-3" />
+      </button>
+
+      {dropdownOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setDropdownOpen(false)}
+          />
+          <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-white/10 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setDropdownOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
+              >
+                <Shield className="size-3.5" />
+                Admin
+              </Link>
+            )}
+            <button
+              onClick={() => {
+                logout();
+                setDropdownOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
+            >
+              <LogOut className="size-3.5" />
+              Logout
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function SiteHeader() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -50,13 +127,16 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="ml-auto shrink-0 rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white sm:hidden"
-              aria-label="Open search"
-            >
-              <Search className="size-5" />
-            </button>
+            <div className="ml-auto flex shrink-0 items-center gap-1 sm:hidden">
+              <AuthButton />
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="shrink-0 rounded-lg p-1.5 text-white/60 transition hover:bg-white/10 hover:text-white"
+                aria-label="Open search"
+              >
+                <Search className="size-5" />
+              </button>
+            </div>
           </>
         )}
 
@@ -82,6 +162,9 @@ export function SiteHeader() {
         </nav>
         <div className="ml-auto hidden w-full max-w-md sm:block">
           <SearchBar compact />
+        </div>
+        <div className="hidden shrink-0 sm:block">
+          <AuthButton />
         </div>
       </div>
     </header>

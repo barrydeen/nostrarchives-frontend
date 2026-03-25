@@ -4,6 +4,7 @@ import { getProfileMetadata, getSocialGraph, getBulkProfileMetadata, getProfileN
 import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ProfileActions } from "@/components/profile/ProfileActions";
+import { BlockButton } from "@/components/profile/BlockButton";
 import { formatNumber, truncateHex } from "@/lib/utils";
 import { ProfileMetadataEntry } from "@/lib/types";
 
@@ -125,7 +126,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
         )}
 
         {/* Action buttons: Keys/QR, Open in App, Share, Lightning */}
-        <ProfileActions pubkey={pubkey} lightningAddress={lightningAddress} />
+        <div className="flex items-center gap-2">
+          <ProfileActions pubkey={pubkey} lightningAddress={lightningAddress} />
+          <BlockButton pubkey={pubkey} />
+        </div>
       </section>
 
       {/* ── Tabbed Content ── */}

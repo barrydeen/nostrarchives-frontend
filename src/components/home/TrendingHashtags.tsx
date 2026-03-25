@@ -1,13 +1,18 @@
-import { Hash, TrendingUp } from "lucide-react";
+"use client";
+
+import { Hash, TrendingUp, X } from "lucide-react";
 import Link from "next/link";
 import { TrendingHashtag } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { adminApi } from "@/lib/admin-api";
 
 interface TrendingHashtagsProps {
   hashtags: TrendingHashtag[];
 }
 
 export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
+  const { isAdmin } = useAuth();
   return (
     <section>
       <div className="mb-6 flex items-center gap-3">
@@ -25,25 +30,42 @@ export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
       ) : (
         <div className="flex flex-wrap gap-2">
           {hashtags.map((tag, index) => (
-            <Link
-              key={tag.hashtag}
-              href={`/search?q=%23${encodeURIComponent(tag.hashtag)}`}
-              prefetch={false}
-              className="group relative flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-card/60 px-3 py-1.5 backdrop-blur transition hover:border-neon-pink/20 hover:bg-card/80"
-            >
-              {index < 3 && (
-                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-neon-pink/80 text-[9px] font-bold text-white">
-                  {index + 1}
+            <div key={tag.hashtag} className="flex items-center gap-0.5">
+              <Link
+                href={`/search?q=%23${encodeURIComponent(tag.hashtag)}`}
+                prefetch={false}
+                className="group relative flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-card/60 px-3 py-1.5 backdrop-blur transition hover:border-neon-pink/20 hover:bg-card/80"
+              >
+                {index < 3 && (
+                  <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-neon-pink/80 text-[9px] font-bold text-white">
+                    {index + 1}
+                  </span>
+                )}
+                <Hash className="size-3.5 text-neon-pink/60" />
+                <span className="text-sm font-medium text-white/80 group-hover:text-white">
+                  {tag.hashtag}
                 </span>
+                <span className="text-[11px] text-white/30">
+                  {formatNumber(tag.count)}
+                </span>
+              </Link>
+              {isAdmin && (
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Block #${tag.hashtag} from trending?`)) return;
+                    try {
+                      await adminApi.blockHashtag(tag.hashtag);
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : "Block failed");
+                    }
+                  }}
+                  className="rounded-full p-0.5 text-white/20 transition hover:bg-red-500/20 hover:text-red-400"
+                  title={`Block #${tag.hashtag} from trending`}
+                >
+                  <X className="size-3" />
+                </button>
               )}
-              <Hash className="size-3.5 text-neon-pink/60" />
-              <span className="text-sm font-medium text-white/80 group-hover:text-white">
-                {tag.hashtag}
-              </span>
-              <span className="text-[11px] text-white/30">
-                {formatNumber(tag.count)}
-              </span>
-            </Link>
+            </div>
           ))}
         </div>
       )}
