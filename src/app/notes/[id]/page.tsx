@@ -4,6 +4,7 @@ import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
 import { InteractionTabs } from "@/components/notes/InteractionTabs";
 import { ReplyThread, buildReplyTree } from "@/components/notes/ReplyThread";
+import { ReplyComposer } from "@/components/notes/ReplyComposer";
 import { getNoteDetail, getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
 import { formatRelative } from "@/lib/utils";
@@ -170,6 +171,13 @@ export default async function NotePage({ params }: NotePageProps) {
           </div>
         </section>
       )}
+
+      {/* Reply composer */}
+      <ReplyComposer
+        eventId={event.id}
+        eventPubkey={event.pubkey}
+        rootId={detail.root_id}
+      />
 
       {/* Replies */}
       <section className="rounded-[32px] border border-white/10 bg-surface/70 p-6 shadow-2xl">
