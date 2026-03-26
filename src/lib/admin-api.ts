@@ -42,7 +42,7 @@ export const adminApi = {
 
   // Pubkeys
   blockPubkey: (pubkey: string, reason?: string) =>
-    adminFetch<{ blocked: boolean; pubkey: string; events_deleted: number }>(
+    adminFetch<{ blocked: boolean; pubkey: string; purge: string }>(
       "/v1/admin/block-pubkey",
       "POST",
       { pubkey, reason },
@@ -56,6 +56,12 @@ export const adminApi = {
       "/v1/admin/blocked-pubkeys",
       "GET",
     ),
+  purgeStatus: (pubkey: string) =>
+    adminFetch<{
+      state: string;
+      events_deleted?: number;
+      error?: string;
+    }>(`/v1/admin/purge-status/${pubkey}`, "GET"),
 
   // Hashtags
   blockHashtag: (hashtag: string, reason?: string) =>
