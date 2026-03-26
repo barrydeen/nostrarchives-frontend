@@ -105,6 +105,9 @@ export interface ProfileMetadataEntry {
   name: string | null;
   preferred_name: string | null;
   picture: string | null;
+  about?: string | null;
+  nip05?: string | null;
+  lud16?: string | null;
 }
 
 export interface ProfilesMetadataResponse {
