@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { ExternalLink, Zap, Loader2 } from "lucide-react";
 import {
-  getProfileMetadata,
   getSocialGraph,
   getBulkProfileMetadata,
   getProfileNotes,
@@ -40,9 +39,8 @@ export function ProfileHeader({ pubkey }: ProfileHeaderProps) {
     async function load() {
       setLoading(true);
 
-      const [socialRes, metadataRes, notesRes, zapRes] = await Promise.all([
+      const [socialRes, notesRes, zapRes] = await Promise.all([
         getSocialGraph(pubkey).catch(() => null),
-        getProfileMetadata(pubkey).catch(() => null),
         getProfileNotes(pubkey, 20, 0).catch(() => null),
         getProfileZapStats(pubkey).catch(() => null),
       ]);
@@ -50,11 +48,10 @@ export function ProfileHeader({ pubkey }: ProfileHeaderProps) {
       if (cancelled) return;
 
       setSocial(socialRes);
-      setProfile(metadataRes?.metadata ?? {});
       setNotesResponse(notesRes);
       setZapStats(zapRes);
 
-      // Build network pubkeys for bulk metadata fetch
+      // Build network pubkeys for bulk metadata fetch (includes this profile)
       const networkPubkeys = new Set<string>();
       networkPubkeys.add(pubkey);
       (socialRes?.follows.pubkeys.slice(0, 18) ?? []).forEach((pk) => networkPubkeys.add(pk));
@@ -78,6 +75,19 @@ export function ProfileHeader({ pubkey }: ProfileHeaderProps) {
             } as ProfileMetadataEntry);
           }
         }
+      }
+
+      // Extract this profile's metadata from bulk response
+      const myProfile = profiles.get(pubkey);
+      if (myProfile) {
+        setProfile({
+          display_name: myProfile.display_name,
+          name: myProfile.name,
+          picture: myProfile.picture,
+          about: myProfile.about,
+          nip05: myProfile.nip05,
+          lud16: myProfile.lud16,
+        });
       }
 
       setNetworkProfiles(profiles);
