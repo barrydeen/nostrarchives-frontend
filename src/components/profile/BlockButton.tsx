@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Ban, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Ban, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { adminApi } from "@/lib/admin-api";
 
@@ -14,9 +14,39 @@ export function BlockButton({ pubkey }: BlockButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [purgeState, setPurgeState] = useState<string | null>(null);
+  const [eventsDeleted, setEventsDeleted] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   if (!isAdmin) return null;
+
+  const startPurgePolling = (pk: string) => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await adminApi.purgeStatus(pk);
+        if (status.events_deleted !== undefined) {
+          setEventsDeleted(status.events_deleted);
+        }
+        if (status.state === "completed" || status.state === "failed") {
+          setPurgeState(status.state);
+          if (status.error) setError(status.error);
+          if (pollRef.current) clearInterval(pollRef.current);
+        } else {
+          setPurgeState(status.state);
+        }
+      } catch {
+        // Polling error — keep trying
+      }
+    }, 2000);
+  };
 
   return (
     <>
@@ -34,7 +64,10 @@ export function BlockButton({ pubkey }: BlockButtonProps) {
             <button
               onClick={() => {
                 setShowConfirm(false);
-                setResult(null);
+                if (!blocked) {
+                  setError(null);
+                  setPurgeState(null);
+                }
               }}
               className="absolute right-3 top-3 rounded-lg p-1 text-white/40 hover:text-white"
             >
@@ -50,9 +83,36 @@ export function BlockButton({ pubkey }: BlockButtonProps) {
               {pubkey.slice(0, 16)}…{pubkey.slice(-8)}
             </p>
 
-            {result ? (
-              <p className="mt-4 rounded-lg bg-white/5 p-3 text-sm text-white/80">
-                {result}
+            {blocked ? (
+              <div className="mt-4 space-y-2">
+                <div className="flex items-center gap-2 rounded-lg bg-white/5 p-3 text-sm">
+                  {purgeState === "completed" ? (
+                    <>
+                      <CheckCircle2 className="size-4 text-green-400" />
+                      <span className="text-white/80">
+                        Blocked. {eventsDeleted.toLocaleString()} events deleted.
+                      </span>
+                    </>
+                  ) : purgeState === "failed" ? (
+                    <>
+                      <AlertCircle className="size-4 text-red-400" />
+                      <span className="text-white/80">
+                        Blocked, but purge failed: {error}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-yellow-400" />
+                      <span className="text-white/80">
+                        Blocked. Purging data… {eventsDeleted > 0 && `${eventsDeleted.toLocaleString()} events deleted so far`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ) : error ? (
+              <p className="mt-4 rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+                Error: {error}
               </p>
             ) : (
               <>
@@ -73,17 +133,18 @@ export function BlockButton({ pubkey }: BlockButtonProps) {
                   <button
                     onClick={async () => {
                       setLoading(true);
+                      setError(null);
                       try {
-                        const res = await adminApi.blockPubkey(
+                        await adminApi.blockPubkey(
                           pubkey,
                           reason || undefined,
                         );
-                        setResult(
-                          `Blocked. ${res.events_deleted} events deleted.`,
-                        );
+                        setBlocked(true);
+                        setPurgeState("queued");
+                        startPurgePolling(pubkey);
                       } catch (e) {
-                        setResult(
-                          `Error: ${e instanceof Error ? e.message : "unknown"}`,
+                        setError(
+                          e instanceof Error ? e.message : "unknown error",
                         );
                       } finally {
                         setLoading(false);
