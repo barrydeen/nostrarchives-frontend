@@ -9,10 +9,12 @@ const BATCH_INTERVAL = 3000; // Fetch new profiles every 3s
 const BATCH_SIZE = 50; // Max pubkeys per relay query
 
 const RELAYS = [
-  "wss://purplepag.es",
-  "wss://relay.damus.io",
-  "wss://relay.nostr.band",
+  "wss://indexer.coracle.social",
+  "wss://indexer.nostrarchives.com",
   "wss://nos.lol",
+  "wss://relay.primal.net",
+  "wss://relay.damus.io",
+  "wss://relay.nos.social",
 ];
 
 let pool: SimplePool | null = null;

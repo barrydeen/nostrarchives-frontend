@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, Heart, Repeat, Zap } from "lucide-react";
 import { ProfileMetadataEntry } from "@/lib/types";
@@ -85,19 +85,6 @@ function OnlineUserCardInner({
   const name = profile?.preferred_name || truncateHex(pubkey);
   const picture = profile?.picture;
 
-  // Flash animation on update
-  const [flashing, setFlashing] = useState(false);
-  const prevActiveRef = useRef(lastActiveMs);
-
-  useEffect(() => {
-    if (lastActiveMs !== prevActiveRef.current) {
-      prevActiveRef.current = lastActiveMs;
-      setFlashing(true);
-      const timer = setTimeout(() => setFlashing(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [lastActiveMs]);
-
   // Relative time updates
   const [relTime, setRelTime] = useState(() => formatRelativeTime(lastActiveMs));
   useEffect(() => {
@@ -117,12 +104,6 @@ function OnlineUserCardInner({
       className="group relative flex flex-col items-center gap-2.5 overflow-hidden rounded-2xl border border-white/[0.06] bg-card/60 p-4 backdrop-blur transition-all duration-300 hover:border-white/15 hover:bg-card/80"
       style={{
         animationDelay: `${Math.min(index * 30, 1500)}ms`,
-        ...(flashing
-          ? {
-              borderColor: activity.flashColor,
-              boxShadow: `0 0 20px ${activity.flashColor}`,
-            }
-          : {}),
       }}
     >
       {/* Avatar */}
@@ -132,7 +113,7 @@ function OnlineUserCardInner({
           <img
             src={picture}
             alt=""
-            className={`size-14 shrink-0 rounded-full object-cover ring-2 ${activity.ringColor} transition-all duration-300 ${isVeryRecent ? "animate-pulse" : ""}`}
+            className={`size-14 shrink-0 rounded-full object-cover ring-2 ${activity.ringColor} transition-all duration-300`}
             loading="lazy"
             decoding="async"
           />
