@@ -77,7 +77,7 @@ export function useOnlineProfiles(pubkeys: string[]) {
     for (let i = 0; i < pks.length; i += BATCH_SIZE) {
       const batch = pks.slice(i, i + BATCH_SIZE);
 
-      const sub = p.subscribeMany(RELAYS, [{ kinds: [0], authors: batch }], {
+      const sub = p.subscribeMany(RELAYS, { kinds: [0], authors: batch }, {
         onevent(event: Event) {
           const existing = bestTimestamps.current.get(event.pubkey);
           if (existing && event.created_at <= existing) return;
