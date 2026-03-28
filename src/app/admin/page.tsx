@@ -4,14 +4,43 @@ import { useCallback, useEffect, useState } from "react";
 import { Shield, Trash2, Plus } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { adminApi, BlockedEntry } from "@/lib/admin-api";
+import { createNip98AuthHeader } from "@/lib/nostr-auth";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
 type Tab = "pubkeys" | "hashtags" | "search_terms";
 
 export default function AdminPage() {
-  const { pubkey, isAdmin, loading: authLoading } = useAuth();
+  const { pubkey, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<Tab>("pubkeys");
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  if (authLoading) {
+  useEffect(() => {
+    if (!pubkey) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const url = `${API_BASE_URL}/v1/admin/check-auth`;
+        const authHeader = await createNip98AuthHeader(url, "GET");
+        const res = await fetch(url, {
+          headers: { Authorization: authHeader },
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          const data = await res.json();
+          setIsAdmin(data.admin === true);
+        } else {
+          setIsAdmin(false);
+        }
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pubkey]);
+
+  if (authLoading || (pubkey && isAdmin === null)) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center text-white/40">
         Loading…
