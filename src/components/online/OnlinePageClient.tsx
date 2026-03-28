@@ -63,12 +63,6 @@ export function OnlinePageClient() {
             />
           ))}
         </div>
-      ) : connected ? (
-        <div className="flex flex-col items-center justify-center py-20 text-white/40">
-          <Users className="size-12 mb-4 opacity-30" />
-          <p className="text-lg font-medium">No active users right now</p>
-          <p className="text-sm mt-1">Check back in a moment</p>
-        </div>
       ) : (
         /* Loading skeleton */
         <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">

@@ -58,10 +58,10 @@ const ACTIVITY_CONFIG: Record<
 
 const DEFAULT_ACTIVITY = {
   icon: FileText,
-  label: "Active",
-  color: "text-neon-green",
-  ringColor: "ring-neon-green/30",
-  flashColor: "rgba(125, 255, 176, 0.5)",
+  label: "Posted",
+  color: "text-neon-blue",
+  ringColor: "ring-neon-blue/30",
+  flashColor: "rgba(94, 208, 255, 0.5)",
 };
 
 function formatRelativeTime(ms: number): string {

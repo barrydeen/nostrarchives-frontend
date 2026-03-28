@@ -6,7 +6,8 @@ import type { Event } from "nostr-tools/core";
 import { ProfileMetadataEntry } from "@/lib/types";
 
 const BATCH_INTERVAL = 3000; // Fetch new profiles every 3s
-const BATCH_SIZE = 50; // Max pubkeys per relay query
+const BATCH_SIZE = 80; // Max pubkeys per relay subscription
+const FLUSH_INTERVAL = 500; // Flush new profiles to state every 500ms
 
 const RELAYS = [
   "wss://indexer.coracle.social",
@@ -26,8 +27,7 @@ function getPool(): SimplePool {
 function parseKind0(event: Event): Omit<ProfileMetadataEntry, "pubkey"> | null {
   try {
     const meta = JSON.parse(event.content);
-    const display_name =
-      meta.display_name || meta.displayName || null;
+    const display_name = meta.display_name || meta.displayName || null;
     const name = meta.name || null;
     const picture = meta.picture || meta.image || null;
     const nip05 = meta.nip05 || null;
@@ -44,96 +44,86 @@ export function useOnlineProfiles(pubkeys: string[]) {
     new Map()
   );
   const profilesRef = useRef<Map<string, ProfileMetadataEntry>>(new Map());
+  // Track best (most recent) created_at per pubkey to keep only the latest kind-0
+  const bestTimestamps = useRef<Map<string, number>>(new Map());
   const pendingRef = useRef<Set<string>>(new Set());
-  const inFlightRef = useRef<Set<string>>(new Set());
+  const requestedRef = useRef<Set<string>>(new Set());
   const initialFetchDone = useRef(false);
+  const dirtyRef = useRef(false);
 
-  const fetchFromRelays = useCallback(async (pks: string[]) => {
+  // Periodic flush: push accumulated profiles to React state
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (dirtyRef.current) {
+        dirtyRef.current = false;
+        setProfiles(new Map(profilesRef.current));
+      }
+    }, FLUSH_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Subscribe to relays for kind-0 events — profiles arrive one by one as relays deliver them
+  const subscribeFromRelays = useCallback((pks: string[]) => {
     if (!pks.length) return;
 
     const p = getPool();
 
-    // Track the best (most recent) kind-0 per pubkey
-    const best = new Map<string, Event>();
+    // Mark all as requested so we don't re-request
+    for (const pk of pks) {
+      requestedRef.current.add(pk);
+    }
 
-    // Query in batches to avoid overloading relays
+    // Subscribe in batches
     for (let i = 0; i < pks.length; i += BATCH_SIZE) {
       const batch = pks.slice(i, i + BATCH_SIZE);
 
-      try {
-        const events = await p.querySync(RELAYS, {
-          kinds: [0],
-          authors: batch,
-        });
+      const sub = p.subscribeMany(RELAYS, [{ kinds: [0], authors: batch }], {
+        onevent(event: Event) {
+          const existing = bestTimestamps.current.get(event.pubkey);
+          if (existing && event.created_at <= existing) return;
 
-        for (const ev of events) {
-          const existing = best.get(ev.pubkey);
-          if (!existing || ev.created_at > existing.created_at) {
-            best.set(ev.pubkey, ev);
+          const parsed = parseKind0(event);
+          if (parsed) {
+            bestTimestamps.current.set(event.pubkey, event.created_at);
+            profilesRef.current.set(event.pubkey, { pubkey: event.pubkey, ...parsed });
+            dirtyRef.current = true;
           }
-        }
-      } catch {
-        // Relay errors are non-fatal
-      }
-    }
-
-    // Parse and store results
-    let changed = false;
-    for (const [pubkey, event] of best) {
-      const parsed = parseKind0(event);
-      if (parsed) {
-        profilesRef.current.set(pubkey, { pubkey, ...parsed });
-        changed = true;
-      }
-      inFlightRef.current.delete(pubkey);
-    }
-
-    // Mark pubkeys with no results so we don't retry them
-    for (const pk of pks) {
-      inFlightRef.current.delete(pk);
-    }
-
-    if (changed) {
-      setProfiles(new Map(profilesRef.current));
+        },
+        oneose() {
+          // All relays sent their stored events — close the subscription
+          sub.close();
+        },
+      });
     }
   }, []);
 
-  // Initial bulk fetch
+  // Initial fetch when first pubkeys arrive
   useEffect(() => {
     if (!pubkeys.length || initialFetchDone.current) return;
     initialFetchDone.current = true;
-
-    fetchFromRelays(pubkeys);
+    subscribeFromRelays(pubkeys);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pubkeys.length > 0]);
 
   // Queue unknown pubkeys for batch fetch
   useEffect(() => {
     for (const pk of pubkeys) {
-      if (!profilesRef.current.has(pk) && !inFlightRef.current.has(pk)) {
+      if (!profilesRef.current.has(pk) && !requestedRef.current.has(pk)) {
         pendingRef.current.add(pk);
       }
     }
   }, [pubkeys]);
 
-  // Periodically fetch queued pubkeys
-  const fetchPending = useCallback(async () => {
-    if (pendingRef.current.size === 0) return;
-    const batch = Array.from(pendingRef.current).slice(0, BATCH_SIZE * 3);
-    pendingRef.current.clear();
-
-    // Mark as in-flight to prevent duplicate requests
-    for (const pk of batch) {
-      inFlightRef.current.add(pk);
-    }
-
-    fetchFromRelays(batch);
-  }, [fetchFromRelays]);
-
+  // Periodically subscribe for queued pubkeys
   useEffect(() => {
-    const interval = setInterval(fetchPending, BATCH_INTERVAL);
+    const interval = setInterval(() => {
+      if (pendingRef.current.size === 0) return;
+      const batch = Array.from(pendingRef.current);
+      pendingRef.current.clear();
+      subscribeFromRelays(batch);
+    }, BATCH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchPending]);
+  }, [subscribeFromRelays]);
 
   return profiles;
 }
