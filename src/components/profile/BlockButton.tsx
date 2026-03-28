@@ -2,15 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Ban, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
-import { useAuth } from "@/components/auth/AuthProvider";
 import { adminApi } from "@/lib/admin-api";
 
 interface BlockButtonProps {
   pubkey: string;
+  isAdmin?: boolean;
 }
 
-export function BlockButton({ pubkey }: BlockButtonProps) {
-  const { isAdmin } = useAuth();
+export function BlockButton({ pubkey, isAdmin }: BlockButtonProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);

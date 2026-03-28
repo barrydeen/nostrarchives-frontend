@@ -1,20 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { Hash, TrendingUp, X } from "lucide-react";
+import { Hash, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { TrendingHashtag } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { adminApi } from "@/lib/admin-api";
 
 interface TrendingHashtagsProps {
   hashtags: TrendingHashtag[];
 }
 
 export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
-  const { isAdmin } = useAuth();
-  const [blockedTags, setBlockedTags] = useState<Set<string>>(new Set());
+  const [blockedTags] = useState<Set<string>>(new Set());
   const visibleHashtags = hashtags.filter((t) => !blockedTags.has(t.hashtag));
 
   return (
@@ -53,23 +50,6 @@ export function TrendingHashtags({ hashtags }: TrendingHashtagsProps) {
                   {formatNumber(tag.count)}
                 </span>
               </Link>
-              {isAdmin && (
-                <button
-                  onClick={async () => {
-                    if (!confirm(`Block #${tag.hashtag} from trending?`)) return;
-                    try {
-                      await adminApi.blockHashtag(tag.hashtag);
-                      setBlockedTags((prev) => new Set(prev).add(tag.hashtag));
-                    } catch (err) {
-                      alert(err instanceof Error ? err.message : "Block failed");
-                    }
-                  }}
-                  className="rounded-full p-0.5 text-white/20 transition hover:bg-red-500/20 hover:text-red-400"
-                  title={`Block #${tag.hashtag} from trending`}
-                >
-                  <X className="size-3" />
-                </button>
-              )}
             </div>
           ))}
         </div>

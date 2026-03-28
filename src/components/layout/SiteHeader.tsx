@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Radio, Search, X, LogIn, LogOut, Shield, ChevronDown } from "lucide-react";
+import { Radio, Search, X, LogIn, LogOut, ChevronDown } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { nip19 } from "nostr-tools";
@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 function AuthButton() {
-  const { pubkey, isAdmin, loading, login, logout } = useAuth();
+  const { pubkey, loading, login, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +49,6 @@ function AuthButton() {
         onClick={() => setDropdownOpen(!dropdownOpen)}
         className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
       >
-        {isAdmin && <Shield className="size-3.5 text-neon-pink" />}
         <span className="hidden sm:inline">{shortNpub}</span>
         <ChevronDown className="size-3" />
       </button>
@@ -61,16 +60,6 @@ function AuthButton() {
             onClick={() => setDropdownOpen(false)}
           />
           <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-white/10 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setDropdownOpen(false)}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
-              >
-                <Shield className="size-3.5" />
-                Admin
-              </Link>
-            )}
             <button
               onClick={() => {
                 logout();
