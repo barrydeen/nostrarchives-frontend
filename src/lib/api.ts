@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse, ProfileNotesResponse, ProfileRepliesResponse, ProfileZapsSentResponse, ProfileZapsReceivedResponse, ProfileZapStatsResponse, TopPostersResponse, MostLikedResponse, MostSharedResponse } from "./types";
+import { StatsResponse, TopNotesResponse, StoredEvent, EventsResponse, SocialResponse, ThreadResponse, InteractionResponse, ProfileMetadataEntry, ProfilesMetadataResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, DailyStatsResponse, SearchResponse, SuggestResponse, NoteDetailResponse, TopNotesUnifiedResponse, TrendingMetric, TrendingRange, AdvancedSearchResponse, TrendingHashtagsResponse, HashtagNotesResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, DailyAnalyticsResponse, ProfileNotesResponse, ProfileRepliesResponse, ProfileZapsSentResponse, ProfileZapsReceivedResponse, ProfileZapStatsResponse, TopPostersResponse, MostLikedResponse, MostSharedResponse, ClientUsersResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -227,6 +227,12 @@ export async function getDailyAnalytics(days = 30) {
 export async function getClientLeaderboard(limit = 50, offset = 0) {
   return fetchFromApi<ClientLeaderboardResponse>(
     `/v1/clients/leaderboard${buildQuery({ limit, offset })}`,
+  );
+}
+
+export async function getClientUsers(clientName: string, limit = 50, offset = 0) {
+  return fetchFromApi<ClientUsersResponse>(
+    `/v1/clients/${encodeURIComponent(clientName)}/users${buildQuery({ limit, offset })}`,
   );
 }
 

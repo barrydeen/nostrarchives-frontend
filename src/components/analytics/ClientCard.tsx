@@ -1,6 +1,7 @@
 "use client";
 
-import { Monitor, Users, FileText } from "lucide-react";
+import Link from "next/link";
+import { Monitor, Users, FileText, ArrowRight } from "lucide-react";
 import { ClientEntry } from "@/lib/types";
 
 function formatNumber(n: number): string {
@@ -109,11 +110,15 @@ export function ClientCard({ clients }: Props) {
         })}
       </div>
 
-      {clients.length > 15 && (
-        <p className="mt-3 text-center text-xs text-white/20">
-          +{clients.length - 15} more clients
-        </p>
-      )}
+      <div className="mt-3 flex items-center justify-center">
+        <Link
+          href="/analytics/clients"
+          className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white/40 transition hover:bg-white/5 hover:text-white/70"
+        >
+          View all {clients.length} clients
+          <ArrowRight className="size-3" />
+        </Link>
+      </div>
     </div>
   );
 }
