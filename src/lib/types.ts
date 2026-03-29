@@ -304,6 +304,19 @@ export interface ClientLeaderboardResponse {
   clients: ClientEntry[];
 }
 
+export interface ClientUserEntry {
+  pubkey: string;
+  note_count: number;
+  first_seen: number;
+  last_seen: number;
+}
+
+export interface ClientUsersResponse {
+  client_name: string;
+  users: ClientUserEntry[];
+  profiles: ProfileMap;
+}
+
 // ─── Relay Leaderboard ──────────────────────────────────────────────
 
 export interface RelayLeaderboardEntry {

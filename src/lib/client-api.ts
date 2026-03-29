@@ -1,6 +1,6 @@
 "use client";
 
-import { DailyStatsResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, TrendingHashtagsResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, ProfileMetadataEntry, ProfilesMetadataResponse } from "./types";
+import { DailyStatsResponse, TrendingNotesResponse, NewUsersResponse, TrendingUsersResponse, TopZappersResponse, TrendingHashtagsResponse, ClientLeaderboardResponse, RelayLeaderboardResponse, ProfileMetadataEntry, ProfilesMetadataResponse, ClientUsersResponse } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
@@ -43,6 +43,12 @@ export async function fetchClientLeaderboard(limit = 10) {
 
 export async function fetchRelayLeaderboard(limit = 10) {
   return fetchJson<RelayLeaderboardResponse>(`${API_BASE_URL}/v1/relays/leaderboard?limit=${limit}`);
+}
+
+export async function fetchClientUsers(clientName: string, limit = 50, offset = 0) {
+  return fetchJson<ClientUsersResponse>(
+    `${API_BASE_URL}/v1/clients/${encodeURIComponent(clientName)}/users?limit=${limit}&offset=${offset}`,
+  );
 }
 
 export async function fetchBulkProfileMetadata(pubkeys: string[]): Promise<Map<string, ProfileMetadataEntry>> {
