@@ -12,6 +12,7 @@ import { TruncatedBio } from "@/components/profile/TruncatedBio";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
 import { ProfileActions } from "@/components/profile/ProfileActions";
 import { BlockButton } from "@/components/profile/BlockButton";
+import { FollowButton } from "@/components/profile/FollowButton";
 import { formatNumber, truncateHex } from "@/lib/utils";
 import type {
   ProfileMetadataEntry,
@@ -174,6 +175,7 @@ export function ProfileHeader({ pubkey }: ProfileHeaderProps) {
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          <FollowButton pubkey={pubkey} />
           <ProfileActions pubkey={pubkey} lightningAddress={lightningAddress} />
           <BlockButton pubkey={pubkey} />
         </div>

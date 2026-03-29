@@ -121,6 +121,21 @@ export async function getOutboxRelays(
   return [...relays];
 }
 
+/**
+ * Fetch a pubkey's contact list (kind 3) from bootstrap relays.
+ * Returns the latest kind-3 event or null if none found.
+ */
+export async function fetchContactList(pubkey: string): Promise<Event | null> {
+  const p = getPool();
+
+  const event = await p.get(BOOTSTRAP_RELAYS, {
+    kinds: [3],
+    authors: [pubkey],
+  });
+
+  return event;
+}
+
 export interface PublishResult {
   successes: string[];
   failures: { relay: string; error: string }[];
