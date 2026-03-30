@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Radio, Search, X, LogIn, LogOut, ChevronDown } from "lucide-react";
+import { Radio, Search, X, LogIn, LogOut, ChevronDown, User } from "lucide-react";
 import { SearchBar } from "@/components/search/SearchBar";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { nip19 } from "nostr-tools";
@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 function AuthButton() {
-  const { pubkey, loading, login, logout } = useAuth();
+  const { pubkey, profile, loading, login, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,15 +42,28 @@ function AuthButton() {
 
   const npub = nip19.npubEncode(pubkey);
   const shortNpub = `${npub.slice(0, 8)}…${npub.slice(-4)}`;
+  const displayName = profile?.display_name || profile?.name || shortNpub;
 
   return (
     <div className="relative">
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
-        className="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
+        className="flex items-center gap-2 rounded-full bg-white/5 px-2 py-1 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
       >
-        <span className="hidden sm:inline">{shortNpub}</span>
-        <ChevronDown className="size-3" />
+        {profile?.picture ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.picture}
+            alt=""
+            className="size-6 rounded-full object-cover ring-1 ring-white/10"
+          />
+        ) : (
+          <span className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-neon-pink/30 to-neon-blue/30 ring-1 ring-white/10">
+            <User className="size-3 text-white/60" />
+          </span>
+        )}
+        <span className="hidden sm:inline max-w-[120px] truncate">{displayName}</span>
+        <ChevronDown className="size-3 shrink-0" />
       </button>
 
       {dropdownOpen && (
@@ -59,7 +72,31 @@ function AuthButton() {
             className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-white/10 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
+          <div className="absolute right-0 top-full z-50 mt-1 min-w-[180px] overflow-hidden rounded-lg border border-white/10 bg-background/95 py-1 shadow-lg backdrop-blur-xl">
+            {/* Profile link */}
+            <Link
+              href={`/profiles/${pubkey}`}
+              onClick={() => setDropdownOpen(false)}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
+            >
+              {profile?.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={profile.picture}
+                  alt=""
+                  className="size-8 rounded-full object-cover ring-1 ring-white/10"
+                />
+              ) : (
+                <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-neon-pink/30 to-neon-blue/30 ring-1 ring-white/10">
+                  <User className="size-4 text-white/60" />
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white truncate">{displayName}</p>
+                <p className="text-[11px] text-white/30 truncate">{shortNpub}</p>
+              </div>
+            </Link>
+            <div className="border-t border-white/5 my-1" />
             <button
               onClick={() => {
                 logout();
