@@ -46,6 +46,41 @@ export interface RelayInfo {
   blocked: string[];
 }
 
+/** Profile metadata parsed from a kind 0 event. */
+export interface NostrProfile {
+  name: string | null;
+  display_name: string | null;
+  picture: string | null;
+  nip05: string | null;
+}
+
+/**
+ * Fetch a pubkey's profile metadata (kind 0) from bootstrap relays.
+ * Returns parsed name, display_name, picture, and nip05.
+ */
+export async function fetchProfileMetadata(pubkey: string): Promise<NostrProfile | null> {
+  const p = getPool();
+
+  const event = await p.get(BOOTSTRAP_RELAYS, {
+    kinds: [0],
+    authors: [pubkey],
+  });
+
+  if (!event?.content) return null;
+
+  try {
+    const meta = JSON.parse(event.content);
+    return {
+      name: meta.name || null,
+      display_name: meta.display_name || null,
+      picture: meta.picture || null,
+      nip05: meta.nip05 || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Fetch a pubkey's NIP-65 relay list (kind 10002) from bootstrap relays.
  * Returns the parsed read/write relay URLs.
