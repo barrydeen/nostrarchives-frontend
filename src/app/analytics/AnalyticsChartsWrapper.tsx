@@ -44,7 +44,7 @@ export function AnalyticsChartsWrapper({ initialData }: AnalyticsChartsWrapperPr
   }, [initialData]);
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6">
+    <div className="min-w-0 overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-6">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Daily Trends</h2>
         <TimeframeSwitcher value={days} onChange={handleTimeframeChange} />

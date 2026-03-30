@@ -52,7 +52,7 @@ export function ClientCard({ clients }: Props) {
   const maxUsers = top[0]?.user_count ?? 1;
 
   return (
-    <div className="rounded-[28px] border border-white/10 bg-surface/70 p-5 shadow-2xl">
+    <div className="min-w-0 rounded-[28px] border border-white/10 bg-surface/70 p-5 shadow-2xl">
       {/* Header */}
       <div className="mb-4 flex items-center gap-2 border-b border-white/5 pb-3">
         <Monitor className="size-4 text-neon-blue" />
