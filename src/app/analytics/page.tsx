@@ -21,7 +21,7 @@ export default async function AnalyticsPage() {
   ]);
 
   return (
-    <div className="space-y-8">
+    <div className="min-w-0 overflow-hidden space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
         <p className="mt-1 text-sm text-white/40">
