@@ -30,6 +30,22 @@ export interface RelayList {
   write: string[];
 }
 
+/** All relay information we can gather from public relays for a given pubkey. */
+export interface RelayInfo {
+  /** NIP-65 inbox (read) relays */
+  inbox: string[];
+  /** NIP-65 outbox (write) relays */
+  outbox: string[];
+  /** NIP-17 DM relays (kind 10050) */
+  dm: string[];
+  /** Search relays (kind 10007) */
+  search: string[];
+  /** Relays from contact list content (kind 3) */
+  contactListRelays: { url: string; policy: { read: boolean; write: boolean } }[];
+  /** Blocked relays (kind 10006) */
+  blocked: string[];
+}
+
 /**
  * Fetch a pubkey's NIP-65 relay list (kind 10002) from bootstrap relays.
  * Returns the parsed read/write relay URLs.
@@ -182,4 +198,77 @@ export async function signEvent(template: EventTemplate): Promise<Event> {
   }
   const signed = await window.nostr.signEvent(template as any);
   return signed as unknown as Event;
+}
+
+/**
+ * Fetch all relay information for a pubkey from indexer relays.
+ * Queries for NIP-65 relay list, DM relays, search relays,
+ * contact list relays, and blocked relays — all from public relays only.
+ */
+export async function fetchAllRelayInfo(pubkey: string): Promise<RelayInfo> {
+  const p = getPool();
+
+  // Fetch all relevant replaceable events in parallel
+  const [relayListEvent, dmRelayEvent, searchRelayEvent, contactListEvent, blockedRelayEvent] =
+    await Promise.all([
+      p.get(BOOTSTRAP_RELAYS, { kinds: [10002], authors: [pubkey] }),
+      p.get(BOOTSTRAP_RELAYS, { kinds: [10050], authors: [pubkey] }),
+      p.get(BOOTSTRAP_RELAYS, { kinds: [10007], authors: [pubkey] }),
+      p.get(BOOTSTRAP_RELAYS, { kinds: [3], authors: [pubkey] }),
+      p.get(BOOTSTRAP_RELAYS, { kinds: [10006], authors: [pubkey] }),
+    ]);
+
+  // Parse NIP-65 relay list (kind 10002)
+  const { read: inbox, write: outbox } = relayListEvent
+    ? parseRelayListEvent(relayListEvent)
+    : { read: [] as string[], write: [] as string[] };
+
+  // Parse DM relays (kind 10050) — "relay" tags
+  const dm: string[] = [];
+  if (dmRelayEvent) {
+    for (const tag of dmRelayEvent.tags) {
+      if (tag[0] === "relay" && tag[1]) {
+        dm.push(normalizeRelayUrl(tag[1]));
+      }
+    }
+  }
+
+  // Parse search relays (kind 10007) — "relay" tags
+  const search: string[] = [];
+  if (searchRelayEvent) {
+    for (const tag of searchRelayEvent.tags) {
+      if (tag[0] === "relay" && tag[1]) {
+        search.push(normalizeRelayUrl(tag[1]));
+      }
+    }
+  }
+
+  // Parse contact list content (kind 3) — JSON in content field
+  const contactListRelays: RelayInfo["contactListRelays"] = [];
+  if (contactListEvent?.content) {
+    try {
+      const relayObj = JSON.parse(contactListEvent.content);
+      for (const [url, policy] of Object.entries(relayObj)) {
+        const p = policy as { read?: boolean; write?: boolean } | null;
+        contactListRelays.push({
+          url: normalizeRelayUrl(url),
+          policy: { read: p?.read ?? true, write: p?.write ?? true },
+        });
+      }
+    } catch {
+      // Content may not be valid JSON relay data
+    }
+  }
+
+  // Parse blocked relays (kind 10006) — "relay" tags
+  const blocked: string[] = [];
+  if (blockedRelayEvent) {
+    for (const tag of blockedRelayEvent.tags) {
+      if (tag[0] === "relay" && tag[1]) {
+        blocked.push(normalizeRelayUrl(tag[1]));
+      }
+    }
+  }
+
+  return { inbox, outbox, dm, search, contactListRelays, blocked };
 }

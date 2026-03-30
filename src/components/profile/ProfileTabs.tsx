@@ -2,15 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { FileText, MessageSquare, Zap, UserPlus, Users } from "lucide-react";
+import { FileText, MessageSquare, Zap, UserPlus, Users, Radio } from "lucide-react";
 import { StoredEvent, ProfileMetadataEntry, ProfileMap, ProfileZapEntry } from "@/lib/types";
+import { fetchAllRelayInfo, type RelayInfo } from "@/lib/nostr-relay";
 import { UnifiedNoteCard } from "@/components/notes/UnifiedNoteCard";
 import { ZapCard } from "@/components/profile/ZapCard";
 import { truncateHex } from "@/lib/utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.nostrarchives.com";
 
-type Tab = "notes" | "replies" | "zaps_sent" | "zaps_received" | "followers" | "following";
+type Tab = "notes" | "replies" | "zaps_sent" | "zaps_received" | "followers" | "following" | "relays";
 
 interface TabDef {
   id: Tab;
@@ -59,6 +60,7 @@ export function ProfileTabs({
     { id: "following", label: "Following", icon: <UserPlus className="size-4" />, count: followsCount },
     { id: "zaps_sent", label: "Zaps Sent", icon: <Zap className="size-4" /> },
     { id: "zaps_received", label: "Zaps Received", icon: <Zap className="size-4" /> },
+    { id: "relays", label: "Relays", icon: <Radio className="size-4" /> },
   ];
 
   const [activeTab, setActiveTab] = useState<Tab>("notes");
@@ -97,6 +99,10 @@ export function ProfileTabs({
   const [followingProfiles, setFollowingProfiles] = useState<Map<string, ProfileMetadataEntry>>(new Map());
   const [followingLoaded, setFollowingLoaded] = useState(false);
 
+  // Relays state (fetched from indexer relays, not backend API)
+  const [relayInfo, setRelayInfo] = useState<RelayInfo | null>(null);
+  const [relaysLoaded, setRelaysLoaded] = useState(false);
+
   const fetchBulkProfiles = useCallback(async (pubkeys: string[]): Promise<Map<string, ProfileMetadataEntry>> => {
     if (!pubkeys.length) return new Map();
     try {
@@ -125,6 +131,22 @@ export function ProfileTabs({
     if (tab === "zaps_received" && zapsReceivedLoaded && !sort) return;
     if (tab === "followers" && followersLoaded) return;
     if (tab === "following" && followingLoaded) return;
+    if (tab === "relays" && relaysLoaded) return;
+
+    // Relays: fetch directly from indexer relays
+    if (tab === "relays") {
+      setLoading(true);
+      try {
+        const info = await fetchAllRelayInfo(pubkey);
+        setRelayInfo(info);
+        setRelaysLoaded(true);
+      } catch (err) {
+        console.error("[ProfileTabs] Failed to fetch relay info:", err);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
 
     // Followers/following use bulk metadata fetch
     if (tab === "followers") {
@@ -180,7 +202,7 @@ export function ProfileTabs({
     } finally {
       setLoading(false);
     }
-  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded, followersLoaded, followingLoaded, notesSort, followersPubkeys, followsPubkeys, fetchBulkProfiles]);
+  }, [pubkey, repliesLoaded, zapsSentLoaded, zapsReceivedLoaded, followersLoaded, followingLoaded, relaysLoaded, notesSort, followersPubkeys, followsPubkeys, fetchBulkProfiles]);
 
   useEffect(() => {
     fetchTab(activeTab);
@@ -283,14 +305,17 @@ export function ProfileTabs({
             />
           )}
           {activeTab === "zaps_received" && (
-            <ZapGrid 
-              zaps={zapsReceived} 
-              total={zapsReceivedTotal} 
-              profiles={zapsReceivedProfiles} 
-              direction="received" 
+            <ZapGrid
+              zaps={zapsReceived}
+              total={zapsReceivedTotal}
+              profiles={zapsReceivedProfiles}
+              direction="received"
               onSortChange={handleZapsReceivedSort}
               currentSort={zapsReceivedSort}
             />
+          )}
+          {activeTab === "relays" && (
+            <RelayGrid relayInfo={relayInfo} />
           )}
         </>
       )}
@@ -446,6 +471,150 @@ function ProfileGrid({ pubkeys, profiles, total, emptyMessage }: {
         })}
       </div>
     </>
+  );
+}
+
+function RelayGrid({ relayInfo }: { relayInfo: RelayInfo | null }) {
+  if (!relayInfo) {
+    return <p className="text-sm text-white/30 py-8 text-center">No relay information found.</p>;
+  }
+
+  const { inbox, outbox, dm, search, contactListRelays, blocked } = relayInfo;
+  const hasAny = inbox.length > 0 || outbox.length > 0 || dm.length > 0 || search.length > 0 || contactListRelays.length > 0 || blocked.length > 0;
+
+  if (!hasAny) {
+    return <p className="text-sm text-white/30 py-8 text-center">No relay information found for this user.</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Inbox / Outbox (NIP-65) */}
+      {(inbox.length > 0 || outbox.length > 0) && (
+        <RelaySection
+          title="Relay List (NIP-65)"
+          description="Inbox (read) and outbox (write) relays"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {inbox.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-medium text-neon-blue/80 uppercase tracking-wider">Inbox (Read)</h4>
+                {inbox.map((url) => (
+                  <RelayPill key={url} url={url} />
+                ))}
+              </div>
+            )}
+            {outbox.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-medium text-neon-pink/80 uppercase tracking-wider">Outbox (Write)</h4>
+                {outbox.map((url) => (
+                  <RelayPill key={url} url={url} />
+                ))}
+              </div>
+            )}
+          </div>
+        </RelaySection>
+      )}
+
+      {/* DM Relays (NIP-17) */}
+      {dm.length > 0 && (
+        <RelaySection
+          title="DM Relays (NIP-17)"
+          description="Preferred relays for direct messages"
+        >
+          <div className="space-y-2">
+            {dm.map((url) => (
+              <RelayPill key={url} url={url} />
+            ))}
+          </div>
+        </RelaySection>
+      )}
+
+      {/* Search Relays */}
+      {search.length > 0 && (
+        <RelaySection
+          title="Search Relays"
+          description="Relays for search queries"
+        >
+          <div className="space-y-2">
+            {search.map((url) => (
+              <RelayPill key={url} url={url} />
+            ))}
+          </div>
+        </RelaySection>
+      )}
+
+      {/* Contact List Relays (Kind 3) */}
+      {contactListRelays.length > 0 && (
+        <RelaySection
+          title="Contact List Relays"
+          description="Relays from the contact list (kind 3)"
+        >
+          <div className="space-y-2">
+            {contactListRelays.map(({ url, policy }) => (
+              <div key={url} className="flex items-center gap-2">
+                <RelayPill url={url} />
+                <div className="flex gap-1.5 shrink-0">
+                  {policy.read && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neon-blue/10 text-neon-blue/70 border border-neon-blue/20">
+                      R
+                    </span>
+                  )}
+                  {policy.write && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-neon-pink/10 text-neon-pink/70 border border-neon-pink/20">
+                      W
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </RelaySection>
+      )}
+
+      {/* Blocked Relays */}
+      {blocked.length > 0 && (
+        <RelaySection
+          title="Blocked Relays"
+          description="Relays this user has blocked"
+        >
+          <div className="space-y-2">
+            {blocked.map((url) => (
+              <RelayPill key={url} url={url} blocked />
+            ))}
+          </div>
+        </RelaySection>
+      )}
+    </div>
+  );
+}
+
+function RelaySection({ title, description, children }: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-card/70 p-4">
+      <h3 className="text-sm font-semibold text-white mb-0.5">{title}</h3>
+      <p className="text-xs text-white/30 mb-3">{description}</p>
+      {children}
+    </div>
+  );
+}
+
+function RelayPill({ url, blocked }: { url: string; blocked?: boolean }) {
+  const displayUrl = url.replace(/^wss?:\/\//, "");
+  return (
+    <div
+      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-mono ${
+        blocked
+          ? "bg-red-500/5 border-red-500/20 text-red-400/70"
+          : "bg-white/[0.02] border-white/10 text-white/70"
+      }`}
+    >
+      <span className={`size-1.5 rounded-full shrink-0 ${blocked ? "bg-red-400/60" : "bg-neon-green/60"}`} />
+      <span className="truncate">{displayUrl}</span>
+    </div>
   );
 }
 
