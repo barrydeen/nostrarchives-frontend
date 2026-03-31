@@ -144,6 +144,7 @@ export default async function NotePage({ params }: NotePageProps) {
             reposts={reposts}
             zaps={zaps}
             profiles={allInteractorProfiles}
+            stats={stats}
           />
         </div>
       </section>
