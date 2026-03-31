@@ -16,6 +16,8 @@ interface InteractionTabsProps {
   reposts: { pubkey: string }[];
   zaps: { pubkey: string; sats?: number }[];
   profiles: Record<string, InteractorProfile>;
+  /** Counter-based stats from the DB (reactions/reposts are counter-only, events not stored) */
+  stats?: { reactions?: number; reposts?: number; zaps?: number };
 }
 
 type Tab = "reactions" | "reposts" | "zaps";
@@ -53,13 +55,16 @@ export function InteractionTabs({
   reposts,
   zaps,
   profiles,
+  stats,
 }: InteractionTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
 
+  // Prefer counter-based stats (accurate even when individual events aren't stored).
+  // Fall back to array length for backwards compatibility.
   const tabs: { key: Tab; label: string; icon: string; count: number }[] = [
-    { key: "reactions", label: "Reactions", icon: "❤️", count: reactions.length },
-    { key: "reposts", label: "Reposts", icon: "🔁", count: reposts.length },
-    { key: "zaps", label: "Zaps", icon: "⚡", count: zaps.length },
+    { key: "reactions", label: "Reactions", icon: "❤️", count: stats?.reactions ?? reactions.length },
+    { key: "reposts", label: "Reposts", icon: "🔁", count: stats?.reposts ?? reposts.length },
+    { key: "zaps", label: "Zaps", icon: "⚡", count: stats?.zaps ?? zaps.length },
   ];
 
   return (
