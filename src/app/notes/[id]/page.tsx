@@ -103,25 +103,25 @@ export default async function NotePage({ params }: NotePageProps) {
   }));
   const reposts = repostEvents.map((e: StoredEvent) => ({ pubkey: e.pubkey }));
   const zaps = zapEvents.map((e: StoredEvent) => {
-    // Try to parse zap amount from bolt11 in tags
-    const bolt11Tag = e.tags?.find((t) => t[0] === "bolt11");
     let sats: number | undefined;
-    if (bolt11Tag?.[1]) {
-      // Simple extraction: look for amount in description tag instead
-      const descTag = e.tags?.find((t) => t[0] === "description");
-      if (descTag?.[1]) {
-        try {
-          const desc = JSON.parse(descTag[1]);
-          const amountTag = desc.tags?.find((t: string[]) => t[0] === "amount");
-          if (amountTag?.[1]) {
-            sats = Math.floor(Number(amountTag[1]) / 1000);
-          }
-        } catch {
-          // ignore parse errors
+    let senderPubkey: string = e.pubkey;
+    // The description tag contains the kind-9734 zap request with the real sender
+    const descTag = e.tags?.find((t) => t[0] === "description");
+    if (descTag?.[1]) {
+      try {
+        const desc = JSON.parse(descTag[1]);
+        if (desc.pubkey) {
+          senderPubkey = desc.pubkey;
         }
+        const amountTag = desc.tags?.find((t: string[]) => t[0] === "amount");
+        if (amountTag?.[1]) {
+          sats = Math.floor(Number(amountTag[1]) / 1000);
+        }
+      } catch {
+        // ignore parse errors
       }
     }
-    return { pubkey: e.pubkey, sats };
+    return { pubkey: senderPubkey, sats };
   });
 
   return (
