@@ -1,7 +1,7 @@
 "use client";
 
 import { SimplePool } from "nostr-tools/pool";
-import type { Event, EventTemplate } from "nostr-tools/core";
+import type { Event, EventTemplate, VerifiedEvent } from "nostr-tools/core";
 
 /**
  * Shared SimplePool instance for relay connections.
@@ -214,17 +214,37 @@ export interface PublishResult {
 }
 
 /**
+ * NIP-42 AUTH handler for relays that require authentication.
+ * Signs the AUTH challenge event via the NIP-07 browser extension.
+ * Used by DM relays (kind 10050) which typically require AUTH.
+ */
+export async function nip42AuthHandler(
+  evt: EventTemplate,
+): Promise<VerifiedEvent> {
+  if (!window.nostr) {
+    throw new Error("No Nostr extension found — cannot authenticate to relay");
+  }
+  const signed = await window.nostr.signEvent(evt as any);
+  return signed as unknown as VerifiedEvent;
+}
+
+/**
  * Publish a signed event to a list of relays.
  * Returns which relays accepted vs rejected.
  */
 export async function publishEvent(
   relays: string[],
   event: Event,
+  options?: { withAuth?: boolean },
 ): Promise<PublishResult> {
   const p = getPool();
   const result: PublishResult = { successes: [], failures: [] };
 
-  const promises = p.publish(relays, event);
+  const publishParams = options?.withAuth
+    ? { onauth: nip42AuthHandler }
+    : undefined;
+
+  const promises = p.publish(relays, event, publishParams);
 
   const settled = await Promise.allSettled(
     promises.map((promise, i) =>
