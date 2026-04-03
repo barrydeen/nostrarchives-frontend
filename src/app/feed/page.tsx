@@ -1,20 +1,23 @@
-import { FollowFeed } from "@/components/feed/FollowFeed";
+import { Suspense } from "react";
+import { FeedTabs } from "@/components/feed/FeedTabs";
 
 export const metadata = {
-  title: "Feed",
-  description: "Notes from people you follow on Nostr.",
+  title: "Feeds",
+  description: "Explore notes from your follows, trending content, or any relay.",
 };
 
 export default function FeedPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Feed</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Feeds</h1>
         <p className="mt-1 text-sm text-white/40">
-          Notes from people you follow, fetched directly from their relays.
+          Explore notes from your follows, trending content, or any relay.
         </p>
       </div>
-      <FollowFeed />
+      <Suspense>
+        <FeedTabs />
+      </Suspense>
     </div>
   );
 }
