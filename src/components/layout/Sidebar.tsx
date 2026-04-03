@@ -24,7 +24,7 @@ const navItems = [
   { href: "/messages", label: "Messages", icon: MessageCircle, requiresAuth: true },
   { href: "/lists", label: "Lists", icon: List, requiresAuth: true },
   { href: "/feed", label: "Feeds", icon: Rss, requiresAuth: false },
-  { href: "/search", label: "Search", icon: Search, requiresAuth: false },
+  { href: "/explore", label: "Search", icon: Search, requiresAuth: false },
   { href: "/analytics", label: "Analytics", icon: BarChart3, requiresAuth: false },
   { href: "/notifications", label: "Notifications", icon: Bell, requiresAuth: true },
 ];

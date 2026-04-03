@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileHeader } from "@/components/layout/MobileHeader";
+import { TopBar } from "@/components/layout/TopBar";
 
 const STORAGE_KEY = "sidebar_collapsed";
 
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           menuOpen={mobileMenuOpen}
           onToggleMenu={() => setMobileMenuOpen((prev) => !prev)}
         />
+        <TopBar />
 
         <div className="relative isolate flex-1 overflow-hidden">
           <div className="grid-overlay pointer-events-none absolute inset-0 opacity-60" />
