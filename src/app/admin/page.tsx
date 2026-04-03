@@ -73,7 +73,7 @@ export default function AdminPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Shield className="size-6 text-neon-pink" />
         <h1 className="text-2xl font-semibold">Admin Panel</h1>

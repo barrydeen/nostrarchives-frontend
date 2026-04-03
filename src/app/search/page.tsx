@@ -103,7 +103,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const emptyState = isHashtag ? notesToRender.length === 0 : profiles.length === 0 && notesToRender.length === 0;
 
   return (
-    <main className="mx-auto max-w-6xl">
+    <div>
       <div className="mb-8 max-w-2xl">
         <SearchBar />
       </div>
@@ -188,7 +188,7 @@ export default async function SearchPage({ searchParams }: Props) {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }
 
