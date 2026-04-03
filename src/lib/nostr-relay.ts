@@ -9,7 +9,7 @@ import type { Event, EventTemplate } from "nostr-tools/core";
  */
 let pool: SimplePool | null = null;
 
-function getPool(): SimplePool {
+export function getPool(): SimplePool {
   if (!pool) {
     pool = new SimplePool();
   }
@@ -17,10 +17,9 @@ function getPool(): SimplePool {
 }
 
 /** Default relays to query for relay lists when we have nothing else. */
-const BOOTSTRAP_RELAYS = [
+export const BOOTSTRAP_RELAYS = [
   "wss://indexer.nostrarchives.com",
   "wss://relay.damus.io",
-  "wss://relay.nostr.band",
   "wss://nos.lol",
   "wss://relay.snort.social",
 ];
@@ -106,7 +105,7 @@ export async function fetchRelayList(pubkey: string): Promise<RelayList> {
  * Tag format: ["r", "wss://relay.example.com", "read"|"write"]
  * If no marker is present, the relay is used for both read and write.
  */
-function parseRelayListEvent(event: Event): RelayList {
+export function parseRelayListEvent(event: Event): RelayList {
   const read: string[] = [];
   const write: string[] = [];
 
@@ -131,7 +130,7 @@ function parseRelayListEvent(event: Event): RelayList {
 }
 
 /** Normalize relay URLs: ensure trailing slash, lowercase protocol. */
-function normalizeRelayUrl(url: string): string {
+export function normalizeRelayUrl(url: string): string {
   try {
     const u = new URL(url);
     return u.toString().replace(/\/$/, "");
