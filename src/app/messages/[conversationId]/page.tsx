@@ -1,14 +1,22 @@
 "use client";
 
+import { use } from "react";
 import { MessageCircle, LogIn, AlertCircle } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useConversations } from "@/hooks/useConversations";
 import { hasNip44Support } from "@/lib/nip17";
-import { ConversationList } from "@/components/messages/ConversationList";
+import { ConversationDetail } from "@/components/messages/ConversationDetail";
 
-export default function MessagesPage() {
+export default function ConversationPage({
+  params,
+}: {
+  params: Promise<{ conversationId: string }>;
+}) {
+  const { conversationId } = use(params);
   const { pubkey, loading: authLoading, login } = useAuth();
-  const { conversations, loading, loadingMore, error, loadMore } = useConversations();
+
+  // Initialize the conversations subscription (needed for messages to flow)
+  useConversations();
 
   if (authLoading) return null;
 
@@ -33,24 +41,22 @@ export default function MessagesPage() {
     );
   }
 
-  if (error) {
+  if (!hasNip44Support()) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-32 text-center">
         <AlertCircle className="size-12 text-red-400/40" />
         <h1 className="text-2xl font-bold">Messages</h1>
-        <p className="max-w-md text-red-400/60">{error}</p>
+        <p className="max-w-md text-red-400/60">
+          Your Nostr extension does not support NIP-44 encryption. Please update
+          to a compatible extension (Alby, nos2x-fox, etc.).
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-3xl flex-col">
-      <ConversationList
-        conversations={conversations}
-        loading={loading}
-        loadingMore={loadingMore}
-        onLoadMore={loadMore}
-      />
+    <div className="mx-auto h-[calc(100vh-4rem)] max-w-3xl overflow-hidden">
+      <ConversationDetail conversationId={conversationId} />
     </div>
   );
 }
