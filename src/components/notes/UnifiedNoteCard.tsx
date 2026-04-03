@@ -4,6 +4,7 @@ import { StoredEvent, ProfileMetadataEntry } from "@/lib/types";
 import { formatNumber, formatRelative, extractHashtags } from "@/lib/utils";
 import { ProfileName } from "@/components/ProfileName";
 import { NoteContent } from "@/components/notes/NoteContent";
+import { NoteActions } from "@/components/notes/NoteActions";
 
 export interface NoteEngagement {
   reactions?: number;
@@ -108,8 +109,9 @@ export function UnifiedNoteCard({
           <div className="mt-1 text-sm">
             <NoteContent content={event.content || "—"} profiles={profilesMap} maxLines={effectiveMaxLines} />
           </div>
-          <div className="mt-2">
+          <div className="mt-2 flex items-center gap-2">
             <EngagementBar engagement={engagement} />
+            <NoteActions eventId={event.id} eventPubkey={event.pubkey} />
           </div>
         </div>
       </div>
@@ -144,7 +146,10 @@ export function UnifiedNoteCard({
           </div>
         )}
         <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
-          <EngagementBar engagement={engagement} />
+          <div className="flex items-center gap-2">
+            <EngagementBar engagement={engagement} />
+            <NoteActions eventId={event.id} eventPubkey={event.pubkey} />
+          </div>
           <span className="inline-flex shrink-0 items-center gap-1 text-xs text-white/40">
             <Clock className="size-3" />
             {formatRelative(event.created_at)}
@@ -179,8 +184,9 @@ export function UnifiedNoteCard({
           ))}
         </div>
       )}
-      <div className="mt-4 border-t border-white/[0.06] pt-3">
+      <div className="mt-4 flex items-center gap-2 border-t border-white/[0.06] pt-3">
         <EngagementBar engagement={engagement} />
+        <NoteActions eventId={event.id} eventPubkey={event.pubkey} />
       </div>
     </div>
   );

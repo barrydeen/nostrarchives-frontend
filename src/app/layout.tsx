@@ -4,6 +4,7 @@ import { Space_Grotesk, Geist_Mono } from "next/font/google";
 import { TopLoader } from "@/components/layout/TopLoader";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { BroadcastPill } from "@/components/BroadcastPill";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -70,6 +71,7 @@ export default function RootLayout({
               {children}
             </main>
           </div>
+          <BroadcastPill />
         </AuthProvider>
       </body>
     </html>
