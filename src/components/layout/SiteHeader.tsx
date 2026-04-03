@@ -8,6 +8,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { nip19 } from "nostr-tools";
 
 const navItems = [
+  { href: "/feed", label: "Feed" },
   { href: "/explore", label: "Explore" },
   { href: "/trending", label: "Trending" },
   { href: "/analytics", label: "Analytics" },
