@@ -369,7 +369,7 @@ export function useFollowFeed(pubkey: string | null): FollowFeedState {
               pool,
               task.relay,
               task.authors,
-              200,
+              50,
               4000,
             );
             // A relay that returned 0 events after timeout is likely down
@@ -503,10 +503,10 @@ export function useFollowFeed(pubkey: string | null): FollowFeedState {
           }
         }
 
-        // Sort by created_at descending
-        const sortedNotes = [...eventMap.values()].sort(
-          (a, b) => b.created_at - a.created_at,
-        );
+        // Filter out replies (events with an "e" tag) and sort by created_at descending
+        const sortedNotes = [...eventMap.values()]
+          .filter((ev) => !ev.tags.some((t) => t[0] === "e"))
+          .sort((a, b) => b.created_at - a.created_at);
         setNotes(sortedNotes);
 
         // Step 5: Resolve profiles

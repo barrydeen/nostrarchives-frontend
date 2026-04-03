@@ -28,6 +28,7 @@ interface TrendingContentProps {
   initialData: TopNotesUnifiedResponse | null;
   initialMetric: TrendingMetric;
   initialRange: TrendingRange;
+  basePath?: string;
 }
 
 function toProfileMap(profiles: Record<string, { name: string | null; display_name: string | null; picture: string | null; nip05: string | null }>): Map<string, ProfileMetadataEntry> {
@@ -45,7 +46,7 @@ function toProfileMap(profiles: Record<string, { name: string | null; display_na
   return map;
 }
 
-export function TrendingContent({ initialData, initialMetric, initialRange }: TrendingContentProps) {
+export function TrendingContent({ initialData, initialMetric, initialRange, basePath }: TrendingContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -114,11 +115,14 @@ export function TrendingContent({ initialData, initialMetric, initialRange }: Tr
 
     // Update URL
     startTransition(() => {
-      const params = new URLSearchParams();
+      const base = basePath ?? "/trending";
+      const params = new URLSearchParams(basePath ? window.location.search : "");
+      params.delete("metric");
+      params.delete("range");
       if (m !== "reactions") params.set("metric", m);
       if (r !== "today") params.set("range", r);
       const qs = params.toString();
-      router.replace(`/trending${qs ? `?${qs}` : ""}`, { scroll: false });
+      router.replace(`${base}${qs ? `?${qs}` : ""}`, { scroll: false });
     });
 
     fetchData(m, r);
