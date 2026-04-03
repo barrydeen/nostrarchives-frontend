@@ -172,6 +172,28 @@ export async function getOutboxRelays(
 }
 
 /**
+ * Get the inbox (read) relays for a target pubkey.
+ * Used to send reactions/likes to the note author.
+ * Falls back to bootstrap relays if no relay list found.
+ */
+export async function getInboxRelays(targetPubkey: string): Promise<string[]> {
+  const list = await fetchRelayList(targetPubkey);
+  if (list.read.length > 0) return list.read;
+  return [...BOOTSTRAP_RELAYS];
+}
+
+/**
+ * Get our own outbox (write) relays.
+ * Used to broadcast reposts from our account.
+ * Falls back to bootstrap relays if no relay list found.
+ */
+export async function getOurOutboxRelays(ourPubkey: string): Promise<string[]> {
+  const list = await fetchRelayList(ourPubkey);
+  if (list.write.length > 0) return list.write;
+  return [...BOOTSTRAP_RELAYS];
+}
+
+/**
  * Fetch a pubkey's contact list (kind 3) from bootstrap relays.
  * Returns the latest kind-3 event or null if none found.
  */

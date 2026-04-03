@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { NoteContent } from "@/components/notes/NoteContent";
 import { ProfileName } from "@/components/ProfileName";
 import { InteractionTabs } from "@/components/notes/InteractionTabs";
+import { NoteActions } from "@/components/notes/NoteActions";
 import { NoteRepliesSection } from "@/components/notes/NoteRepliesSection";
 import { getNoteDetail, getEventThread, getBulkProfileMetadata } from "@/lib/api";
 import { extractMentionPubkeysFromEvents, extractMentionPubkeys } from "@/lib/mentions";
@@ -137,6 +138,7 @@ export default async function NotePage({ params }: NotePageProps) {
         </div>
         <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-white/50">
           <span className="inline-flex items-center gap-1.5">💬 {stats?.replies ?? 0} replies</span>
+          <NoteActions eventId={event.id} eventPubkey={event.pubkey} />
         </div>
         <div className="mt-4">
           <InteractionTabs
