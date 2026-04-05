@@ -120,6 +120,12 @@ function ReplyNodeItem({
         profile={profiles.get(node.event.pubkey)}
         profiles={profiles}
         variant="compact"
+        engagement={{
+          reactions: node.event.reactions,
+          replies: node.event.replies,
+          reposts: node.event.reposts,
+          zap_sats: node.event.zap_sats,
+        }}
       />
       {/* Reply button */}
       {pubkey && (
