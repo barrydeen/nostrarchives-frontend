@@ -63,7 +63,6 @@ function TimeframeSwitcher({ value, onChange }: TimeframeSwitcherProps) {
     { label: "Today", value: "today" },
     { label: "7D", value: "7d" },
     { label: "30D", value: "30d" },
-    { label: "All", value: "all" },
   ];
 
   return (
