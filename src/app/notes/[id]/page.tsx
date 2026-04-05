@@ -61,11 +61,15 @@ export default async function NotePage({ params }: NotePageProps) {
   const repostEvents = thread?.reposts ?? [];
   const zapEvents = thread?.zaps ?? [];
 
-  // Collect all unique pubkeys from interactors that we don't already have profiles for
+  // Collect pubkeys from reactions, reposts, and @-mentions in content.
+  // Zap sender profiles are fetched client-side from public relays to save backend bandwidth.
+  const mentionPubkeys = extractMentionPubkeys(event.content ?? "");
+  const replyMentionPubkeys = extractMentionPubkeysFromEvents(replies);
   const interactorPubkeys = [
     ...reactionEvents.map((e: StoredEvent) => e.pubkey),
     ...repostEvents.map((e: StoredEvent) => e.pubkey),
-    ...zapEvents.map((e: StoredEvent) => e.pubkey),
+    ...mentionPubkeys,
+    ...replyMentionPubkeys,
   ];
   const missingPubkeys = [...new Set(interactorPubkeys)].filter(
     (pk) => !profiles.has(pk)
@@ -75,6 +79,12 @@ export default async function NotePage({ params }: NotePageProps) {
   let extraProfiles = new Map<string, ProfileMetadataEntry>();
   if (missingPubkeys.length > 0) {
     extraProfiles = await getBulkProfileMetadata(missingPubkeys);
+    // Merge into main profiles map so NoteContent can resolve @-mentions
+    for (const [pk, meta] of extraProfiles) {
+      if (!profiles.has(pk)) {
+        profiles.set(pk, meta);
+      }
+    }
   }
 
   // Merge all profiles into a flat record for the client component

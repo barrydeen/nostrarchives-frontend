@@ -55,6 +55,48 @@ export interface NostrProfile {
 }
 
 /**
+ * Fetch profile metadata (kind 0) for multiple pubkeys from bootstrap relays in a single query.
+ * Returns a map of pubkey -> NostrProfile, keeping only the latest event per pubkey.
+ */
+export async function fetchBulkProfileMetadata(
+  pubkeys: string[],
+): Promise<Map<string, NostrProfile>> {
+  const result = new Map<string, NostrProfile>();
+  if (pubkeys.length === 0) return result;
+
+  const p = getPool();
+  const events = await p.querySync(BOOTSTRAP_RELAYS, {
+    kinds: [0],
+    authors: pubkeys,
+  });
+
+  // Keep only the latest event per pubkey
+  const latest = new Map<string, { created_at: number; content: string }>();
+  for (const event of events) {
+    const existing = latest.get(event.pubkey);
+    if (!existing || event.created_at > existing.created_at) {
+      latest.set(event.pubkey, event);
+    }
+  }
+
+  for (const [pubkey, event] of latest) {
+    try {
+      const meta = JSON.parse(event.content);
+      result.set(pubkey, {
+        name: meta.name || null,
+        display_name: meta.display_name || null,
+        picture: meta.picture || null,
+        nip05: meta.nip05 || null,
+      });
+    } catch {
+      // ignore parse errors
+    }
+  }
+
+  return result;
+}
+
+/**
  * Fetch a pubkey's profile metadata (kind 0) from bootstrap relays.
  * Returns parsed name, display_name, picture, and nip05.
  */

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { SafeAvatar } from "@/components/search/SafeAvatar";
+import { fetchBulkProfileMetadata } from "@/lib/nostr-relay";
 
 interface InteractorProfile {
   pubkey: string;
@@ -58,13 +59,56 @@ export function InteractionTabs({
   stats,
 }: InteractionTabsProps) {
   const [activeTab, setActiveTab] = useState<Tab | null>(null);
+  const [relayProfiles, setRelayProfiles] = useState<Record<string, InteractorProfile>>({});
+  const fetchedRef = useRef(false);
+
+  const totalZapSats = zaps.reduce((sum, z) => sum + (z.sats ?? 0), 0);
+  const zapCount = stats?.zaps ?? zaps.length;
+
+  // Lazily fetch missing zap sender profiles from public relays
+  useEffect(() => {
+    if (activeTab !== "zaps" || fetchedRef.current) return;
+    fetchedRef.current = true;
+
+    const missingPubkeys = zaps
+      .map((z) => z.pubkey)
+      .filter((pk) => !profiles[pk] && !relayProfiles[pk]);
+    const unique = [...new Set(missingPubkeys)];
+    if (unique.length === 0) return;
+
+    fetchBulkProfileMetadata(unique).then((fetched) => {
+      const newProfiles: Record<string, InteractorProfile> = {};
+      for (const [pubkey, p] of fetched) {
+        newProfiles[pubkey] = {
+          pubkey,
+          name: p.name,
+          display_name: p.display_name,
+          picture: p.picture,
+        };
+      }
+      setRelayProfiles((prev) => ({ ...prev, ...newProfiles }));
+    });
+  }, [activeTab, zaps, profiles, relayProfiles]);
+
+  // Merge backend profiles with relay-fetched profiles
+  const allProfiles = { ...profiles, ...relayProfiles };
 
   // Prefer counter-based stats (accurate even when individual events aren't stored).
   // Fall back to array length for backwards compatibility.
-  const tabs: { key: Tab; label: string; icon: string; count: number }[] = [
-    { key: "reactions", label: "Reactions", icon: "❤️", count: stats?.reactions ?? reactions.length },
-    { key: "reposts", label: "Reposts", icon: "🔁", count: stats?.reposts ?? reposts.length },
-    { key: "zaps", label: "Zaps", icon: "⚡", count: stats?.zaps ?? zaps.length },
+  const tabs: { key: Tab; label: string; icon: string; display: React.ReactNode }[] = [
+    { key: "reactions", label: "Reactions", icon: "❤️", display: stats?.reactions ?? reactions.length },
+    { key: "reposts", label: "Reposts", icon: "🔁", display: stats?.reposts ?? reposts.length },
+    {
+      key: "zaps",
+      label: "Zaps",
+      icon: "⚡",
+      display: (
+        <>
+          {totalZapSats.toLocaleString()} sats
+          <span className="text-white/40"> ({zapCount})</span>
+        </>
+      ),
+    },
   ];
 
   return (
@@ -84,7 +128,7 @@ export function InteractionTabs({
               }`}
             >
               <span>{tab.icon}</span>
-              <span>{tab.count}</span>
+              <span>{tab.display}</span>
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
@@ -101,7 +145,7 @@ export function InteractionTabs({
                   <ProfileRow
                     key={`${r.pubkey}-${i}`}
                     pubkey={r.pubkey}
-                    profile={profiles[r.pubkey]}
+                    profile={allProfiles[r.pubkey]}
                     extra={
                       <span className="shrink-0 text-base">{r.emoji}</span>
                     }
@@ -120,7 +164,7 @@ export function InteractionTabs({
                   <ProfileRow
                     key={`${r.pubkey}-${i}`}
                     pubkey={r.pubkey}
-                    profile={profiles[r.pubkey]}
+                    profile={allProfiles[r.pubkey]}
                   />
                 ))}
               </div>
@@ -136,7 +180,7 @@ export function InteractionTabs({
                   <ProfileRow
                     key={`${z.pubkey}-${i}`}
                     pubkey={z.pubkey}
-                    profile={profiles[z.pubkey]}
+                    profile={allProfiles[z.pubkey]}
                     extra={
                       z.sats ? (
                         <span className="shrink-0 text-xs text-yellow-400">
