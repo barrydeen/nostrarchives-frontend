@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { Monitor, Users, FileText, ArrowRight } from "lucide-react";
 import { ClientEntry } from "@/lib/types";
+import { fetchClientLeaderboard } from "@/lib/client-api";
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -41,25 +43,95 @@ function rankBadge(rank: number) {
   );
 }
 
+const rangeOptions = [
+  { label: "Today", value: "today" },
+  { label: "7D", value: "7d" },
+  { label: "30D", value: "30d" },
+  { label: "All", value: "all" },
+];
+
+function TimeframeSwitcher({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (range: string) => void;
+}) {
+  return (
+    <div className="flex gap-1 rounded-lg bg-white/5 p-1">
+      {rangeOptions.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+            value === opt.value
+              ? "bg-white/10 text-white"
+              : "text-white/40 hover:text-white/60"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 interface Props {
   clients: ClientEntry[];
 }
 
 export function ClientCard({ clients }: Props) {
+  const [range, setRange] = useState("today");
+  const [currentClients, setCurrentClients] = useState<ClientEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch "today" on mount
+  useEffect(() => {
+    fetchClientLeaderboard(100, "today")
+      .then((res) => {
+        if (res?.clients) setCurrentClients(res.clients);
+      })
+      .catch(() => setCurrentClients(clients))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRangeChange = useCallback(
+    async (newRange: string) => {
+      setRange(newRange);
+      if (newRange === "all" && clients.length > 0) {
+        setCurrentClients(clients);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetchClientLeaderboard(100, newRange);
+        if (res?.clients) {
+          setCurrentClients(res.clients);
+        }
+      } catch {
+        // keep existing data on error
+      } finally {
+        setLoading(false);
+      }
+    },
+    [clients],
+  );
+
   // Sort by user_count descending
-  const sorted = [...clients].sort((a, b) => b.user_count - a.user_count);
+  const sorted = [...currentClients].sort((a, b) => b.user_count - a.user_count);
   const top = sorted.slice(0, 15);
   const maxUsers = top[0]?.user_count ?? 1;
 
   return (
     <div className="min-w-0 rounded-[28px] border border-white/10 bg-surface/70 p-5 shadow-2xl">
       {/* Header */}
-      <div className="mb-4 flex items-center gap-2 border-b border-white/5 pb-3">
-        <Monitor className="size-4 text-neon-blue" />
-        <h2 className="text-base font-semibold">Client Usage</h2>
-        <span className="ml-auto text-xs text-white/30">
-          {clients.length} clients tracked
-        </span>
+      <div className="mb-4 flex items-center justify-between border-b border-white/5 pb-3">
+        <div className="flex items-center gap-2">
+          <Monitor className="size-4 text-neon-blue" />
+          <h2 className="text-base font-semibold">Client Usage</h2>
+        </div>
+        <TimeframeSwitcher value={range} onChange={handleRangeChange} />
       </div>
 
       {/* Column headers */}
@@ -71,7 +143,7 @@ export function ClientCard({ clients }: Props) {
       </div>
 
       {/* Rows */}
-      <div className="space-y-1">
+      <div className={`space-y-1 transition-opacity duration-200 ${loading ? "opacity-50" : ""}`}>
         {top.map((client, idx) => {
           const rank = idx + 1;
           const barPct = Math.max(3, (client.user_count / maxUsers) * 100);
@@ -115,7 +187,7 @@ export function ClientCard({ clients }: Props) {
           href="/analytics/clients"
           className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium text-white/40 transition hover:bg-white/5 hover:text-white/70"
         >
-          View all {clients.length} clients
+          View all {currentClients.length} clients
           <ArrowRight className="size-3" />
         </Link>
       </div>
