@@ -301,6 +301,7 @@ export interface ClientEntry {
 }
 
 export interface ClientLeaderboardResponse {
+  range?: string;
   clients: ClientEntry[];
 }
 

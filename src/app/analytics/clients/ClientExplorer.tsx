@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Monitor,
@@ -11,7 +11,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { ClientEntry, ClientUserEntry, ProfileMap } from "@/lib/types";
-import { fetchClientUsers } from "@/lib/client-api";
+import { fetchClientUsers, fetchClientLeaderboard } from "@/lib/client-api";
 
 function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -63,6 +63,39 @@ function rankBadge(rank: number) {
 }
 
 type SortKey = "notes" | "users";
+
+const rangeOptions = [
+  { label: "Today", value: "today" },
+  { label: "7D", value: "7d" },
+  { label: "30D", value: "30d" },
+  { label: "All", value: "all" },
+];
+
+function TimeframeSwitcher({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (range: string) => void;
+}) {
+  return (
+    <div className="flex gap-1 rounded-lg bg-white/5 p-1">
+      {rangeOptions.map((opt) => (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+            value === opt.value
+              ? "bg-white/10 text-white"
+              : "text-white/40 hover:text-white/60"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 interface ClientRowProps {
   client: ClientEntry;
@@ -254,10 +287,53 @@ interface Props {
 }
 
 export function ClientExplorer({ clients }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>("notes");
+  const [sortKey, setSortKey] = useState<SortKey>("users");
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [range, setRange] = useState("today");
+  const [currentClients, setCurrentClients] = useState<ClientEntry[]>(clients);
+  const [loading, setLoading] = useState(true);
 
-  const sorted = [...clients].sort((a, b) =>
+  // Fetch "today" on mount
+  useEffect(() => {
+    fetchClientLeaderboard(200, "today")
+      .then((res) => {
+        if (res?.clients) setCurrentClients(res.clients);
+      })
+      .catch(() => setCurrentClients(clients))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleRangeChange = useCallback(
+    async (newRange: string) => {
+      setRange(newRange);
+      setExpandedClient(null);
+      // Reuse server-provided data for "all" (the default SSR range)
+      if (newRange === "all" && clients.length > 0) {
+        setCurrentClients(clients);
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetchClientLeaderboard(200, newRange);
+        if (res?.clients) {
+          setCurrentClients(res.clients);
+        }
+      } catch {
+        // keep existing data on error
+      } finally {
+        setLoading(false);
+      }
+    },
+    [clients],
+  );
+
+  // Sync if server-side data changes (e.g. navigation)
+  useEffect(() => {
+    if (range === "all") setCurrentClients(clients);
+  }, [clients, range]);
+
+  const sorted = [...currentClients].sort((a, b) =>
     sortKey === "notes"
       ? b.note_count - a.note_count
       : b.user_count - a.user_count,
@@ -266,8 +342,8 @@ export function ClientExplorer({ clients }: Props) {
   const maxNotes = sorted[0]?.note_count ?? 1;
   const maxUsers = sorted.reduce((m, c) => Math.max(m, c.user_count), 1);
 
-  const totalNotes = clients.reduce((sum, c) => sum + c.note_count, 0);
-  const totalUsers = clients.reduce((sum, c) => sum + c.user_count, 0);
+  const totalNotes = currentClients.reduce((sum, c) => sum + c.note_count, 0);
+  const totalUsers = currentClients.reduce((sum, c) => sum + c.user_count, 0);
 
   return (
     <div className="space-y-4">
@@ -278,7 +354,7 @@ export function ClientExplorer({ clients }: Props) {
             Clients tracked
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums">
-            {clients.length}
+            {currentClients.length}
           </p>
         </div>
         <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
@@ -299,36 +375,39 @@ export function ClientExplorer({ clients }: Props) {
         </div>
       </div>
 
-      {/* Sort controls */}
-      <div className="flex items-center gap-2">
-        <ArrowUpDown className="size-3.5 text-white/30" />
-        <span className="text-xs text-white/30">Sort by</span>
-        <button
-          onClick={() => setSortKey("notes")}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            sortKey === "notes"
-              ? "bg-white/10 text-white"
-              : "text-white/40 hover:text-white/60"
-          }`}
-        >
-          <FileText className="mr-1 inline size-3" />
-          Notes
-        </button>
-        <button
-          onClick={() => setSortKey("users")}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            sortKey === "users"
-              ? "bg-white/10 text-white"
-              : "text-white/40 hover:text-white/60"
-          }`}
-        >
-          <Users className="mr-1 inline size-3" />
-          Users
-        </button>
+      {/* Timeframe + Sort controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TimeframeSwitcher value={range} onChange={handleRangeChange} />
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="size-3.5 text-white/30" />
+          <span className="text-xs text-white/30">Sort by</span>
+          <button
+            onClick={() => setSortKey("notes")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              sortKey === "notes"
+                ? "bg-white/10 text-white"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            <FileText className="mr-1 inline size-3" />
+            Notes
+          </button>
+          <button
+            onClick={() => setSortKey("users")}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+              sortKey === "users"
+                ? "bg-white/10 text-white"
+                : "text-white/40 hover:text-white/60"
+            }`}
+          >
+            <Users className="mr-1 inline size-3" />
+            Users
+          </button>
+        </div>
       </div>
 
       {/* Client list */}
-      <div className="space-y-2">
+      <div className={`space-y-2 transition-opacity duration-200 ${loading ? "opacity-50" : ""}`}>
         {sorted.map((client, idx) => (
           <ClientRow
             key={client.client_name}

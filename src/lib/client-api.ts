@@ -37,8 +37,10 @@ export async function fetchTrendingHashtags(limit = 20) {
   return fetchJson<TrendingHashtagsResponse>(`${API_BASE_URL}/v1/hashtags/trending?limit=${limit}`);
 }
 
-export async function fetchClientLeaderboard(limit = 10) {
-  return fetchJson<ClientLeaderboardResponse>(`${API_BASE_URL}/v1/clients/leaderboard?limit=${limit}`);
+export async function fetchClientLeaderboard(limit = 10, range?: string) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (range) params.set("range", range);
+  return fetchJson<ClientLeaderboardResponse>(`${API_BASE_URL}/v1/clients/leaderboard?${params}`);
 }
 
 export async function fetchRelayLeaderboard(limit = 10) {

@@ -224,9 +224,9 @@ export async function getDailyAnalytics(days = 30) {
 
 // ─── Client Leaderboard ─────────────────────────────────────────────
 
-export async function getClientLeaderboard(limit = 50, offset = 0) {
+export async function getClientLeaderboard(limit = 50, offset = 0, range?: string) {
   return fetchFromApi<ClientLeaderboardResponse>(
-    `/v1/clients/leaderboard${buildQuery({ limit, offset })}`,
+    `/v1/clients/leaderboard${buildQuery({ limit, offset, range })}`,
   );
 }
 
